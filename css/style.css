@@ -44,7 +44,7 @@ body {
 }
 
 .app-header {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto 16px;
 }
 .app-header h1 {
@@ -57,7 +57,7 @@ body {
 }
 
 .app-main {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -76,7 +76,7 @@ body {
 }
 
 .status-box {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 10px 14px;
   border-radius: 8px;
@@ -221,6 +221,33 @@ th {
   top: 0;
   background: var(--surface-1);
 }
+
+/* Di layar lebar (laptop ke atas), padatkan tabel dengan lebar kolom
+   tetap (lihat <colgroup> di index.html) supaya semua kolom muat dalam
+   satu layar tanpa perlu scroll horizontal. */
+@media (min-width: 960px) {
+  table {
+    table-layout: fixed;
+    min-width: 0;
+    font-size: 0.78rem;
+  }
+  th,
+  td {
+    padding: 6px 6px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .col-nama {
+    white-space: nowrap;
+    min-width: 0;
+  }
+  th {
+    font-size: 0.72rem;
+    white-space: normal;
+    line-height: 1.25;
+    vertical-align: bottom;
+  }
+}
 tbody tr {
   cursor: pointer;
 }
@@ -234,12 +261,16 @@ tr.row-expanded {
 
 .chip {
   display: inline-block;
-  padding: 3px 8px;
+  max-width: 100%;
+  padding: 2px 6px;
   border-radius: 999px;
   color: #ffffff;
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   font-weight: 600;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
 }
 .chip-muted {
   background: transparent;
@@ -247,7 +278,10 @@ tr.row-expanded {
   padding: 0;
 }
 .trend {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
+}
+.col-indicator {
+  text-align: center;
 }
 
 .detail-row td {
@@ -288,7 +322,7 @@ tr.row-expanded {
 }
 
 .app-footer {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 16px auto 0;
   color: var(--text-muted);
   font-size: 0.78rem;

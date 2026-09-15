@@ -351,15 +351,21 @@
       tr.innerHTML =
         "<td>" +
         escapeHtml(s.npsn) +
-        "</td><td class='col-nama'>" +
+        "</td><td class='col-nama' title='" +
+        escapeHtml(s.nama) +
+        "'>" +
         escapeHtml(s.nama) +
         "</td><td>" +
         escapeHtml(s.jenis) +
         "</td><td>" +
         escapeHtml(s.status) +
-        "</td><td>" +
+        "</td><td title='" +
         escapeHtml(s.kabkota) +
-        "</td><td>" +
+        "'>" +
+        escapeHtml(s.kabkota) +
+        "</td><td title='" +
+        escapeHtml(s.kecamatan) +
+        "'>" +
         escapeHtml(s.kecamatan) +
         "</td>";
 
