@@ -181,10 +181,13 @@
 
   function computeFilterOptions() {
     const opts = {};
+    const selectedKabKota = state.filters["Kabupaten/Kota"];
     for (const field of CFG.FILTER_FIELDS) {
       const key = fieldKeyFor(field);
       const set = new Set();
       for (const s of state.schools) {
+        // Pilihan Kecamatan dibatasi ke Kabupaten/Kota yang sedang dipilih.
+        if (field === "Kecamatan" && selectedKabKota && s.kabkota !== selectedKabKota) continue;
         if (s[key]) set.add(s[key]);
       }
       opts[field] = Array.from(set).sort((a, b) => a.localeCompare(b, "id"));
@@ -255,6 +258,14 @@
       select.value = state.filters[field] || "";
       select.addEventListener("change", () => {
         state.filters[field] = select.value;
+        if (field === "Kabupaten/Kota") {
+          // Pilihan Kecamatan mengikuti Kabupaten/Kota yang dipilih.
+          computeFilterOptions();
+          if (state.filters.Kecamatan && !state.filterOptions.Kecamatan.includes(state.filters.Kecamatan)) {
+            state.filters.Kecamatan = "";
+          }
+          renderFilterControls();
+        }
         refresh();
       });
       wrap.appendChild(label);
@@ -514,6 +525,7 @@
       for (const field of CFG.FILTER_FIELDS) state.filters[field] = "";
       state.filters.search = "";
       el("search-input").value = "";
+      computeFilterOptions();
       renderFilterControls();
       refresh();
     });
