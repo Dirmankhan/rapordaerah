@@ -4,39 +4,37 @@
   const CFG = window.DASHBOARD_CONFIG;
   const PAGE_SIZE = 25;
 
-  // Tangga warna ordinal (biru), dari terang (skor rendah) ke gelap (skor tinggi).
-  // Nilai persis dari palet referensi dataviz (references/palette.md).
-  const BLUE_STEPS = {
-    250: "#86b6ef",
-    300: "#6da7ec",
-    350: "#5598e7",
-    400: "#3987e5",
-    450: "#2a78d6",
-    500: "#256abf",
-    550: "#1c5cab",
-    600: "#184f95",
-  };
+  // Warna tetap per kategori Label Capaian (bukan tangga ordinal): Baik/Tinggi
+  // = hijau, Sedang = oranye, Kurang/Rendah = merah, Tidak Tersedia = abu.
   const MUTED = "#898781";
   const GOOD = "#0ca30c";
+  const ORANGE = "#eb6834";
   const CRITICAL = "#d03b3b";
 
-  // Urutan tingkatan label capaian yang dikenal, dari TERBAIK ke TERBURUK.
-  const KNOWN_TIERS = [
-    "sangat tinggi",
-    "tinggi",
-    "sedang",
-    "menengah",
-    "cukup",
-    "rendah",
-    "sangat rendah",
+  // Kata kunci label, dicek berurutan (yang paling spesifik/negatif duluan
+  // supaya "kurang baik" dsb. tidak salah kena cocokkan sebagai "baik").
+  const CATEGORY_RULES = [
+    { rank: 3, color: MUTED, test: (l) => l.indexOf("tidak tersedia") >= 0 },
+    { rank: 2, color: CRITICAL, test: (l) => /rendah|kurang/.test(l) },
+    { rank: 0, color: GOOD, test: (l) => /tinggi|baik/.test(l) },
+    { rank: 1, color: ORANGE, test: (l) => /sedang|menengah|cukup/.test(l) },
   ];
+
+  function categorize(label) {
+    if (!label) return { rank: 3, color: MUTED };
+    const l = String(label).toLowerCase();
+    for (const rule of CATEGORY_RULES) {
+      if (rule.test(l)) return { rank: rule.rank, color: rule.color };
+    }
+    return { rank: 3, color: MUTED };
+  }
 
   const state = {
     identityHeader: CFG.IDENTITY_FIELDS,
     schools: [], // hasil merge lengkap
     filtered: [],
     filterOptions: {}, // field -> sorted unique values
-    filters: { search: "" }, // field -> selected value ("" = semua)
+    filters: {}, // field -> selected value ("" = semua)
     page: 1,
     expandedIdx: null,
   };
@@ -187,16 +185,11 @@
   }
 
   function applyFilters() {
-    const search = state.filters.search.trim().toLowerCase();
     state.filtered = state.schools.filter((s) => {
       for (const field of CFG.FILTER_FIELDS) {
         const key = fieldKeyFor(field);
         const selected = state.filters[field];
         if (selected && s[key] !== selected) return false;
-      }
-      if (search) {
-        const hay = (String(s.npsn) + " " + s.nama).toLowerCase();
-        if (!hay.includes(search)) return false;
       }
       return true;
     });
@@ -205,35 +198,8 @@
   }
 
   // ---------------------------------------------------------------------
-  // Warna & label tier
+  // Warna & label kategori (dipakai langsung dari `categorize()` di atas)
   // ---------------------------------------------------------------------
-
-  function tierRank(label) {
-    if (!label) return -1;
-    const l = String(label).toLowerCase();
-    if (l.indexOf("tidak tersedia") >= 0) return -1;
-    for (let i = 0; i < KNOWN_TIERS.length; i++) {
-      if (l.indexOf(KNOWN_TIERS[i]) >= 0) return i;
-    }
-    return -1;
-  }
-
-  /** Bangun peta label -> warna untuk satu set label yang muncul (ordinal, terbaik = gelap). */
-  function buildLabelColorMap(labels) {
-    const ranked = labels.filter((l) => tierRank(l) >= 0);
-    ranked.sort((a, b) => tierRank(a) - tierRank(b)); // terbaik dulu
-    const uniqueRanked = Array.from(new Set(ranked));
-    const steps = [600, 500, 450, 400, 350, 300, 250];
-    const colorMap = {};
-    uniqueRanked.forEach((label, i) => {
-      const stepIdx = Math.min(i, steps.length - 1);
-      colorMap[label] = BLUE_STEPS[steps[stepIdx]];
-    });
-    for (const l of labels) {
-      if (!(l in colorMap)) colorMap[l] = MUTED;
-    }
-    return colorMap;
-  }
 
   function trendArrow(text) {
     if (!text) return { symbol: "", color: MUTED, text: "-" };
@@ -320,17 +286,7 @@
       }
 
       const labels = Array.from(counts.keys());
-      const colorMap = buildLabelColorMap(labels);
-      const sorted = labels
-        .slice()
-        .sort((a, b) => {
-          const ra = tierRank(a),
-            rb = tierRank(b);
-          if (ra === -1 && rb === -1) return 0;
-          if (ra === -1) return 1;
-          if (rb === -1) return -1;
-          return ra - rb;
-        });
+      const sorted = labels.slice().sort((a, b) => categorize(a).rank - categorize(b).rank);
 
       const bar = document.createElement("div");
       bar.className = "stacked-bar";
@@ -340,7 +296,7 @@
         const seg = document.createElement("div");
         seg.className = "bar-seg";
         seg.style.width = pct.toFixed(2) + "%";
-        seg.style.background = colorMap[lbl];
+        seg.style.background = categorize(lbl).color;
         seg.title = lbl + ": " + n + " satdik (" + pct.toFixed(1) + "%)";
         bar.appendChild(seg);
       }
@@ -354,7 +310,7 @@
         const li = document.createElement("li");
         const swatch = document.createElement("span");
         swatch.className = "swatch";
-        swatch.style.background = colorMap[lbl];
+        swatch.style.background = categorize(lbl).color;
         li.appendChild(swatch);
         li.appendChild(document.createTextNode(lbl + " — " + n + " (" + pct + "%)"));
         legend.appendChild(li);
@@ -409,7 +365,7 @@
         if (!v || !v.label) {
           td.innerHTML = "<span class='chip chip-muted'>-</span>";
         } else {
-          const color = buildLabelColorMap([v.label])[v.label];
+          const color = categorize(v.label).color;
           const trend = trendArrow(v.perubahanTahun);
           td.innerHTML =
             "<span class='chip' style='background:" +
@@ -501,19 +457,8 @@
   }
 
   function wireStaticControls() {
-    let searchTimer = null;
-    el("search-input").addEventListener("input", (e) => {
-      clearTimeout(searchTimer);
-      const val = e.target.value;
-      searchTimer = setTimeout(() => {
-        state.filters.search = val;
-        refresh();
-      }, 150);
-    });
     el("reset-filters").addEventListener("click", () => {
       for (const field of CFG.FILTER_FIELDS) state.filters[field] = "";
-      state.filters.search = "";
-      el("search-input").value = "";
       renderFilterControls();
       refresh();
     });

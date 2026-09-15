@@ -90,16 +90,14 @@ body {
 }
 
 .filters {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 260px));
   gap: 12px;
 }
 .filter-item {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  min-width: 160px;
-  flex: 1 1 200px;
 }
 .filter-item label {
   font-size: 0.8rem;
@@ -113,10 +111,7 @@ body {
   background: var(--surface-1);
   color: var(--text-primary);
   font-size: 0.9rem;
-}
-.filter-search {
-  margin-top: 12px;
-  flex-basis: 100%;
+  width: 100%;
 }
 .btn-secondary {
   margin-top: 12px;
