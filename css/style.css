@@ -89,10 +89,17 @@ body {
   border-color: var(--critical);
 }
 
+.filter-bar {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+}
 .filters {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 260px));
   gap: 12px;
+  flex: 1 1 auto;
 }
 .filter-item {
   display: flex;
@@ -114,7 +121,6 @@ body {
   width: 100%;
 }
 .btn-secondary {
-  margin-top: 12px;
   padding: 8px 14px;
   border-radius: 6px;
   border: 1px solid var(--gridline);
