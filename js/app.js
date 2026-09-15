@@ -37,7 +37,12 @@
     filters: {}, // field -> selected value ("" = semua)
     page: 1,
     expandedIdx: null,
+    visibleIndicators: CFG.INDICATORS.filter((ind) => !ind.smkOnly),
   };
+
+  function isSMK(jenis) {
+    return /smk/i.test(String(jenis || ""));
+  }
 
   const el = (id) => document.getElementById(id);
 
@@ -166,9 +171,12 @@
   // ---------------------------------------------------------------------
 
   function fieldKeyFor(filterField) {
-    return { "Kabupaten/Kota": "kabkota", "Jenis Satuan Pendidikan": "jenis", "Status Satuan Pendidikan": "status" }[
-      filterField
-    ];
+    return {
+      "Kabupaten/Kota": "kabkota",
+      Kecamatan: "kecamatan",
+      "Jenis Satuan Pendidikan": "jenis",
+      "Status Satuan Pendidikan": "status",
+    }[filterField];
   }
 
   function computeFilterOptions() {
@@ -335,7 +343,41 @@
   // Render: tabel detail
   // ---------------------------------------------------------------------
 
+  /** Bangun ulang <colgroup> + header tabel; sembunyikan kolom indikator
+   * smkOnly saat tidak ada satuan pendidikan jenjang SMK di hasil filter. */
+  function renderTableHead() {
+    const hasSMK = state.filtered.some((s) => isSMK(s.jenis));
+    state.visibleIndicators = CFG.INDICATORS.filter((ind) => !ind.smkOnly || hasSMK);
+
+    const colgroup = el("table-colgroup");
+    const headRow = el("table-head-row");
+    colgroup.innerHTML = "";
+    headRow.innerHTML = "";
+
+    const identityWidthTotal = CFG.TABLE_COLUMNS.reduce((sum, c) => sum + c.width, 0);
+    const indicatorWidth = (100 - identityWidthTotal) / state.visibleIndicators.length;
+
+    for (const col of CFG.TABLE_COLUMNS) {
+      const c = document.createElement("col");
+      c.style.width = col.width + "%";
+      colgroup.appendChild(c);
+      const th = document.createElement("th");
+      th.textContent = col.label;
+      if (col.truncate) th.className = "col-truncate";
+      headRow.appendChild(th);
+    }
+    for (const ind of state.visibleIndicators) {
+      const c = document.createElement("col");
+      c.style.width = indicatorWidth + "%";
+      colgroup.appendChild(c);
+      const th = document.createElement("th");
+      th.textContent = ind.label;
+      headRow.appendChild(th);
+    }
+  }
+
   function renderTable() {
+    renderTableHead();
     const tbody = el("table-body");
     tbody.innerHTML = "";
 
@@ -348,28 +390,19 @@
     pageRows.forEach((s, i) => {
       const globalIdx = startIdx + i;
       const tr = document.createElement("tr");
-      tr.innerHTML =
-        "<td>" +
-        escapeHtml(s.npsn) +
-        "</td><td class='col-nama' title='" +
-        escapeHtml(s.nama) +
-        "'>" +
-        escapeHtml(s.nama) +
-        "</td><td>" +
-        escapeHtml(s.jenis) +
-        "</td><td>" +
-        escapeHtml(s.status) +
-        "</td><td title='" +
-        escapeHtml(s.kabkota) +
-        "'>" +
-        escapeHtml(s.kabkota) +
-        "</td><td title='" +
-        escapeHtml(s.kecamatan) +
-        "'>" +
-        escapeHtml(s.kecamatan) +
-        "</td>";
 
-      for (const ind of CFG.INDICATORS) {
+      for (const col of CFG.TABLE_COLUMNS) {
+        const td = document.createElement("td");
+        const val = s[col.key] ?? "";
+        td.textContent = val;
+        if (col.truncate) {
+          td.className = "col-truncate";
+          td.title = val;
+        }
+        tr.appendChild(td);
+      }
+
+      for (const ind of state.visibleIndicators) {
         const v = s.indikator[ind.key];
         const td = document.createElement("td");
         td.className = "col-indicator";
@@ -404,7 +437,7 @@
         const detailTr = document.createElement("tr");
         detailTr.className = "detail-row";
         const detailTd = document.createElement("td");
-        detailTd.colSpan = 6 + CFG.INDICATORS.length;
+        detailTd.colSpan = CFG.TABLE_COLUMNS.length + state.visibleIndicators.length;
         detailTd.appendChild(renderDetailPanel(s));
         detailTr.appendChild(detailTd);
         tbody.appendChild(detailTr);

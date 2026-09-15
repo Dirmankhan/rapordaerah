@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Dashboard Rapor Pendidikan Daerah</title>
-  <link rel="stylesheet" href="css/style.css?v=5" />
+  <link rel="stylesheet" href="css/style.css?v=6" />
 </head>
 <body>
   <header class="app-header">
@@ -37,39 +37,9 @@
       </div>
       <div class="table-scroll">
         <table id="detail-table">
-          <colgroup>
-            <col style="width: 6%" />
-            <col style="width: 18%" />
-            <col style="width: 5%" />
-            <col style="width: 5%" />
-            <col style="width: 8%" />
-            <col style="width: 8%" />
-            <col style="width: 6.25%" />
-            <col style="width: 6.25%" />
-            <col style="width: 6.25%" />
-            <col style="width: 6.25%" />
-            <col style="width: 6.25%" />
-            <col style="width: 6.25%" />
-            <col style="width: 6.25%" />
-            <col style="width: 6.25%" />
-          </colgroup>
+          <colgroup id="table-colgroup"></colgroup>
           <thead>
-            <tr>
-              <th>NPSN</th>
-              <th class="col-nama">Nama Satuan Pendidikan</th>
-              <th>Jenis</th>
-              <th>Status</th>
-              <th>Kab./Kota</th>
-              <th>Kecamatan</th>
-              <th>A.1 Literasi</th>
-              <th>A.2 Numerasi</th>
-              <th>A.3 Karakter</th>
-              <th>D.1 Kualitas Pembelajaran</th>
-              <th>D.4 Iklim Keamanan</th>
-              <th>D.8 Iklim Kebinekaan</th>
-              <th>A.4 Penyerapan Lulusan SMK</th>
-              <th>D.17 Link and Match</th>
-            </tr>
+            <tr id="table-head-row"></tr>
           </thead>
           <tbody id="table-body"></tbody>
         </table>
@@ -90,8 +60,8 @@
     </p>
   </footer>
 
-  <script src="js/config.js?v=5"></script>
-  <script src="js/gviz.js?v=5"></script>
-  <script src="js/app.js?v=5"></script>
+  <script src="js/config.js?v=6"></script>
+  <script src="js/gviz.js?v=6"></script>
+  <script src="js/app.js?v=6"></script>
 </body>
 </html>

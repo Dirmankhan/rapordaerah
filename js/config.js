@@ -27,11 +27,25 @@ window.DASHBOARD_CONFIG = {
     "Kecamatan",
   ],
 
-  // Kolom identitas yang dijadikan filter dropdown.
-  FILTER_FIELDS: ["Kabupaten/Kota", "Jenis Satuan Pendidikan", "Status Satuan Pendidikan"],
+  // Kolom identitas yang dijadikan filter dropdown (urutan tampil di UI).
+  FILTER_FIELDS: ["Kabupaten/Kota", "Kecamatan", "Jenis Satuan Pendidikan", "Status Satuan Pendidikan"],
+
+  // Kolom identitas yang ditampilkan sebagai kolom di tabel detail
+  // (terpisah dari FILTER_FIELDS — Jenis & Kecamatan tetap bisa difilter
+  // walau tidak ditampilkan sebagai kolom tabel). `key` harus sama dengan
+  // properti objek sekolah di app.js (lihat `loadAll`).
+  TABLE_COLUMNS: [
+    { key: "npsn", label: "NPSN", width: 7 },
+    { key: "nama", label: "Nama Satuan Pendidikan", width: 24, truncate: true },
+    { key: "status", label: "Status", width: 7 },
+    { key: "kabkota", label: "Kab./Kota", width: 12, truncate: true },
+  ],
 
   // Indikator yang ditampilkan di dashboard: key harus sama dengan nama
   // kolom di CONFIG_SHEET_ID, label adalah judul yang tampil di UI.
+  // `smkOnly: true` menandai indikator yang hanya relevan untuk jenjang
+  // SMK — kolomnya di tabel detail hanya dimunculkan saat ada satuan
+  // pendidikan jenjang SMK di antara hasil filter yang sedang tampil.
   INDICATORS: [
     { key: "Literasi", label: "A.1 Kemampuan literasi" },
     { key: "Numerasi", label: "A.2 Kemampuan numerasi" },
@@ -39,10 +53,7 @@ window.DASHBOARD_CONFIG = {
     { key: "D.1 Kualitas pembelajaran", label: "D.1 Kualitas pembelajaran" },
     { key: "D.4 Iklim keamanan satuan pendidikan", label: "D.4 Iklim keamanan satuan pendidikan" },
     { key: "D.8 Iklim Kebinekaan", label: "D.8 Iklim Kebinekaan" },
-    // Indikator prioritas jenjang SMK — hanya terisi untuk satuan pendidikan
-    // jenjang SMK; jenjang lain otomatis tampil "Tidak Tersedia" karena
-    // selnya kosong di sheet sumber.
-    { key: "A.4 Penyerapan lulusan SMK", label: "A.4 Penyerapan lulusan SMK" },
-    { key: "D.17 Link and match dengan dunia kerja", label: "D.17 Link and match dengan dunia kerja" },
+    { key: "A.4 Penyerapan lulusan SMK", label: "A.4 Penyerapan lulusan SMK", smkOnly: true },
+    { key: "D.17 Link and match dengan dunia kerja", label: "D.17 Link and match dengan dunia kerja", smkOnly: true },
   ],
 };
