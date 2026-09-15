@@ -37,5 +37,7 @@ window.DASHBOARD_CONFIG = {
     { key: "Numerasi", label: "A.2 Kemampuan numerasi" },
     { key: "Karakter", label: "A.3 Karakter" },
     { key: "D.1 Kualitas pembelajaran", label: "D.1 Kualitas pembelajaran" },
+    { key: "D.4 Iklim keamanan satuan pendidikan", label: "D.4 Iklim keamanan satuan pendidikan" },
+    { key: "D.8 Iklim Kebinekaan", label: "D.8 Iklim Kebinekaan" },
   ],
 };
