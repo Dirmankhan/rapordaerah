@@ -39,5 +39,10 @@ window.DASHBOARD_CONFIG = {
     { key: "D.1 Kualitas pembelajaran", label: "D.1 Kualitas pembelajaran" },
     { key: "D.4 Iklim keamanan satuan pendidikan", label: "D.4 Iklim keamanan satuan pendidikan" },
     { key: "D.8 Iklim Kebinekaan", label: "D.8 Iklim Kebinekaan" },
+    // Indikator prioritas jenjang SMK — hanya terisi untuk satuan pendidikan
+    // jenjang SMK; jenjang lain otomatis tampil "Tidak Tersedia" karena
+    // selnya kosong di sheet sumber.
+    { key: "A.4 Penyerapan lulusan SMK", label: "A.4 Penyerapan lulusan SMK" },
+    { key: "D.17 Link and match dengan dunia kerja", label: "D.17 Link and match dengan dunia kerja" },
   ],
 };
