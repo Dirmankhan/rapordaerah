@@ -80,3 +80,9 @@ js/app.js          Logika pengambilan data, filter, dan render dashboard
   domain `docs.google.com` diblokir oleh kebijakan proxy sandbox. Mohon uji
   dengan membuka halaman di browser biasa (lingkungan pengguna tidak
   memiliki batasan ini) setelah deploy.
+- `index.html` memuat `css/style.css` dan berkas di `js/` dengan query
+  `?v=<short-sha-commit-terakhir>` supaya browser tidak menampilkan versi
+  lama dari cache setelah deploy baru. Saat mengubah salah satu berkas
+  tersebut, perbarui juga nilai `?v=` di `index.html` ke short SHA commit
+  yang baru. Jika dashboard tampak belum menampilkan perubahan terbaru
+  meski deploy sudah sukses, coba hard refresh (Ctrl/Cmd+Shift+R).
