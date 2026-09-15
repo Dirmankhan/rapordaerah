@@ -185,11 +185,16 @@
   }
 
   function applyFilters() {
+    const search = (state.filters.search || "").trim().toLowerCase();
     state.filtered = state.schools.filter((s) => {
       for (const field of CFG.FILTER_FIELDS) {
         const key = fieldKeyFor(field);
         const selected = state.filters[field];
         if (selected && s[key] !== selected) return false;
+      }
+      if (search) {
+        const hay = (String(s.npsn) + " " + s.nama).toLowerCase();
+        if (!hay.includes(search)) return false;
       }
       return true;
     });
@@ -457,8 +462,19 @@
   }
 
   function wireStaticControls() {
+    let searchTimer = null;
+    el("search-input").addEventListener("input", (e) => {
+      clearTimeout(searchTimer);
+      const val = e.target.value;
+      searchTimer = setTimeout(() => {
+        state.filters.search = val;
+        refresh();
+      }, 150);
+    });
     el("reset-filters").addEventListener("click", () => {
       for (const field of CFG.FILTER_FIELDS) state.filters[field] = "";
+      state.filters.search = "";
+      el("search-input").value = "";
       renderFilterControls();
       refresh();
     });

@@ -97,7 +97,7 @@ body {
 }
 .filters {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 260px));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
   flex: 1 1 auto;
 }
@@ -119,6 +119,10 @@ body {
   color: var(--text-primary);
   font-size: 0.9rem;
   width: 100%;
+}
+.search-item {
+  max-width: 360px;
+  margin: 12px 0 16px;
 }
 .btn-secondary {
   padding: 8px 14px;

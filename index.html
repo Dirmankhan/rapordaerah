@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Dashboard Rapor Pendidikan Daerah</title>
-  <link rel="stylesheet" href="css/style.css?v=b4714e9" />
+  <link rel="stylesheet" href="css/style.css?v=2" />
 </head>
 <body>
   <header class="app-header">
@@ -31,6 +31,10 @@
     <section class="panel" aria-label="Detail satuan pendidikan">
       <h2>Detail Satuan Pendidikan</h2>
       <p class="muted small">Klik satu baris untuk melihat rincian lengkap tiap indikator.</p>
+      <div class="filter-item search-item">
+        <label for="search-input">Cari NPSN / Nama Satuan Pendidikan</label>
+        <input id="search-input" type="text" placeholder="Ketik NPSN atau nama sekolah..." />
+      </div>
       <div class="table-scroll">
         <table id="detail-table">
           <thead>
@@ -68,8 +72,8 @@
     </p>
   </footer>
 
-  <script src="js/config.js?v=b4714e9"></script>
-  <script src="js/gviz.js?v=b4714e9"></script>
-  <script src="js/app.js?v=b4714e9"></script>
+  <script src="js/config.js?v=2"></script>
+  <script src="js/gviz.js?v=2"></script>
+  <script src="js/app.js?v=2"></script>
 </body>
 </html>
