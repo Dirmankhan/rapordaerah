@@ -35,10 +35,10 @@ window.DASHBOARD_CONFIG = {
   // walau tidak ditampilkan sebagai kolom tabel). `key` harus sama dengan
   // properti objek sekolah di app.js (lihat `loadAll`).
   TABLE_COLUMNS: [
-    { key: "npsn", label: "NPSN", width: 7 },
-    { key: "nama", label: "Nama Satuan Pendidikan", width: 24, truncate: true },
-    { key: "status", label: "Status", width: 7 },
-    { key: "kabkota", label: "Kab./Kota", width: 12, truncate: true },
+    { key: "npsn", label: "NPSN", width: 6 },
+    { key: "nama", label: "Nama Satuan Pendidikan", width: 26, truncate: true },
+    { key: "status", label: "Status", width: 6 },
+    { key: "kabkota", label: "Kab./Kota", width: 10, truncate: true },
   ],
 
   // Indikator yang ditampilkan di dashboard: key harus sama dengan nama
