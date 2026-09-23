@@ -182,7 +182,7 @@
   function computeFilterOptions() {
     const opts = {};
     const selectedKabKota = state.filters["Kabupaten/Kota"];
-    for (const field of CFG.FILTER_FIELDS) {
+    for (const { field } of CFG.FILTER_FIELDS) {
       const key = fieldKeyFor(field);
       const set = new Set();
       for (const s of state.schools) {
@@ -198,10 +198,14 @@
   function applyFilters() {
     const search = (state.filters.search || "").trim().toLowerCase();
     state.filtered = state.schools.filter((s) => {
-      for (const field of CFG.FILTER_FIELDS) {
+      for (const { field, multi } of CFG.FILTER_FIELDS) {
         const key = fieldKeyFor(field);
         const selected = state.filters[field];
-        if (selected && s[key] !== selected) return false;
+        if (multi) {
+          if (selected && selected.length > 0 && !selected.includes(s[key])) return false;
+        } else if (selected && s[key] !== selected) {
+          return false;
+        }
       }
       if (search) {
         const hay = (String(s.npsn) + " " + s.nama).toLowerCase();
@@ -234,42 +238,134 @@
   // Render: filter controls
   // ---------------------------------------------------------------------
 
+  function onKabKotaChanged() {
+    // Pilihan Kecamatan mengikuti Kabupaten/Kota yang dipilih.
+    computeFilterOptions();
+    if (Array.isArray(state.filters.Kecamatan)) {
+      state.filters.Kecamatan = state.filters.Kecamatan.filter((v) => state.filterOptions.Kecamatan.includes(v));
+    }
+    renderFilterControls();
+  }
+
+  function buildSingleSelect(field) {
+    const select = document.createElement("select");
+    select.dataset.field = field;
+    const optAll = document.createElement("option");
+    optAll.value = "";
+    optAll.textContent = "Semua";
+    select.appendChild(optAll);
+    for (const val of state.filterOptions[field] || []) {
+      const opt = document.createElement("option");
+      opt.value = val;
+      opt.textContent = val;
+      select.appendChild(opt);
+    }
+    select.value = state.filters[field] || "";
+    select.addEventListener("change", () => {
+      state.filters[field] = select.value;
+      if (field === "Kabupaten/Kota") onKabKotaChanged();
+      refresh();
+    });
+    return select;
+  }
+
+  function buildMultiSelect(field) {
+    const options = state.filterOptions[field] || [];
+    const selected = Array.isArray(state.filters[field]) ? state.filters[field] : [];
+
+    const box = document.createElement("div");
+    box.className = "multiselect";
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "multiselect-btn";
+    const updateBtnLabel = () => {
+      btn.textContent =
+        selected.length === 0 ? "Semua" : selected.length === 1 ? selected[0] : selected.length + " dipilih";
+    };
+    updateBtnLabel();
+
+    const panel = document.createElement("div");
+    panel.className = "multiselect-panel";
+    panel.hidden = true;
+    panel.addEventListener("click", (e) => e.stopPropagation());
+
+    const actions = document.createElement("div");
+    actions.className = "multiselect-actions";
+    const selectAllBtn = document.createElement("button");
+    selectAllBtn.type = "button";
+    selectAllBtn.textContent = "Pilih semua";
+    const clearBtn = document.createElement("button");
+    clearBtn.type = "button";
+    clearBtn.textContent = "Hapus semua";
+    actions.appendChild(selectAllBtn);
+    actions.appendChild(clearBtn);
+    panel.appendChild(actions);
+
+    const checkboxes = [];
+    for (const val of options) {
+      const optLabel = document.createElement("label");
+      optLabel.className = "multiselect-option";
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.value = val;
+      cb.checked = selected.includes(val);
+      cb.addEventListener("change", () => {
+        const idx = selected.indexOf(val);
+        if (cb.checked && idx === -1) selected.push(val);
+        if (!cb.checked && idx !== -1) selected.splice(idx, 1);
+        state.filters[field] = selected;
+        updateBtnLabel();
+        refresh();
+      });
+      optLabel.appendChild(cb);
+      optLabel.appendChild(document.createTextNode(val));
+      panel.appendChild(optLabel);
+      checkboxes.push(cb);
+    }
+
+    selectAllBtn.addEventListener("click", () => {
+      selected.splice(0, selected.length, ...options);
+      checkboxes.forEach((cb) => (cb.checked = true));
+      state.filters[field] = selected;
+      updateBtnLabel();
+      refresh();
+    });
+    clearBtn.addEventListener("click", () => {
+      selected.splice(0, selected.length);
+      checkboxes.forEach((cb) => (cb.checked = false));
+      state.filters[field] = selected;
+      updateBtnLabel();
+      refresh();
+    });
+
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const willOpen = panel.hidden;
+      closeAllMultiSelectPanels();
+      panel.hidden = !willOpen;
+    });
+
+    box.appendChild(btn);
+    box.appendChild(panel);
+    return box;
+  }
+
+  function closeAllMultiSelectPanels() {
+    document.querySelectorAll(".multiselect-panel").forEach((p) => (p.hidden = true));
+  }
+
   function renderFilterControls() {
     const container = el("filters");
     container.innerHTML = "";
 
-    for (const field of CFG.FILTER_FIELDS) {
+    for (const { field, multi } of CFG.FILTER_FIELDS) {
       const wrap = document.createElement("div");
       wrap.className = "filter-item";
       const label = document.createElement("label");
       label.textContent = field;
-      const select = document.createElement("select");
-      select.dataset.field = field;
-      const optAll = document.createElement("option");
-      optAll.value = "";
-      optAll.textContent = "Semua";
-      select.appendChild(optAll);
-      for (const val of state.filterOptions[field] || []) {
-        const opt = document.createElement("option");
-        opt.value = val;
-        opt.textContent = val;
-        select.appendChild(opt);
-      }
-      select.value = state.filters[field] || "";
-      select.addEventListener("change", () => {
-        state.filters[field] = select.value;
-        if (field === "Kabupaten/Kota") {
-          // Pilihan Kecamatan mengikuti Kabupaten/Kota yang dipilih.
-          computeFilterOptions();
-          if (state.filters.Kecamatan && !state.filterOptions.Kecamatan.includes(state.filters.Kecamatan)) {
-            state.filters.Kecamatan = "";
-          }
-          renderFilterControls();
-        }
-        refresh();
-      });
       wrap.appendChild(label);
-      wrap.appendChild(select);
+      wrap.appendChild(multi ? buildMultiSelect(field) : buildSingleSelect(field));
       container.appendChild(wrap);
     }
   }
@@ -514,6 +610,7 @@
   }
 
   function wireStaticControls() {
+    document.addEventListener("click", closeAllMultiSelectPanels);
     let searchTimer = null;
     el("search-input").addEventListener("input", (e) => {
       clearTimeout(searchTimer);
@@ -524,7 +621,7 @@
       }, 150);
     });
     el("reset-filters").addEventListener("click", () => {
-      for (const field of CFG.FILTER_FIELDS) state.filters[field] = "";
+      for (const { field, multi } of CFG.FILTER_FIELDS) state.filters[field] = multi ? [] : "";
       state.filters.search = "";
       el("search-input").value = "";
       computeFilterOptions();

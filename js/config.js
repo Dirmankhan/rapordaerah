@@ -27,8 +27,15 @@ window.DASHBOARD_CONFIG = {
     "Kecamatan",
   ],
 
-  // Kolom identitas yang dijadikan filter dropdown (urutan tampil di UI).
-  FILTER_FIELDS: ["Kabupaten/Kota", "Kecamatan", "Jenis Satuan Pendidikan", "Status Satuan Pendidikan"],
+  // Kolom identitas yang dijadikan filter (urutan tampil di UI).
+  // `multi: true` membuat filter itu jadi multi-pilih (checkbox dropdown);
+  // selain itu tetap dropdown pilih-satu seperti biasa.
+  FILTER_FIELDS: [
+    { field: "Kabupaten/Kota", multi: false },
+    { field: "Kecamatan", multi: true },
+    { field: "Jenis Satuan Pendidikan", multi: true },
+    { field: "Status Satuan Pendidikan", multi: false },
+  ],
 
   // Kolom identitas yang ditampilkan sebagai kolom di tabel detail
   // (terpisah dari FILTER_FIELDS — Jenis & Kecamatan tetap bisa difilter
