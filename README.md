@@ -64,12 +64,15 @@ dashboard.
 
 ### Halaman "Indikator SPM Kab./Kota" (`spm.html`)
 
-Matriks Label & Nilai Capaian 2025 tiap indikator SPM untuk 10
-kabupaten/kota di NTB, dibaca dari tab **`spm`** pada sheet konfigurasi:
-kolom A/B (No/Nama Indikator), C/D (rujukan sel Label/Nilai Capaian 2025 —
-rujukan yang sama dipakai ke seluruh kabupaten/kota, masing-masing dari
-spreadsheet Rapor Pendidikan kabupaten/kota-nya sendiri), dan kolom I/J
-(nama Kabupaten/Kota + judul spreadsheet sumbernya).
+Filter dropdown **Kabupaten/Kota**; tabelnya menampilkan No Indikator,
+Nama Indikator, Nilai Capaian, dan Label Capaian (2025) untuk kabupaten/kota
+yang dipilih. Data dibaca dari tab **`spm`** pada sheet konfigurasi: kolom
+A/B (No/Nama Indikator), C/D (rujukan sel Label/Nilai Capaian 2025 — rujukan
+yang sama dipakai ke seluruh kabupaten/kota, masing-masing dari spreadsheet
+Rapor Pendidikan kabupaten/kota-nya sendiri), dan kolom I/J (nama
+Kabupaten/Kota + judul spreadsheet sumbernya). Data tiap kabupaten diambil
+sekali saat pertama dipilih lalu disimpan di memori (tidak diambil ulang
+saat berpindah-pindah kabupaten dalam sesi yang sama).
 
 Karena sel J hanya berisi **judul** file (bukan ID), pemetaan judul → ID
 spreadsheet disimpan manual di `js/config.js` → `SPM_SOURCE_BY_TITLE`. Saat

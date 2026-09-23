@@ -375,20 +375,11 @@ tr.row-expanded {
 .col-indicator {
   text-align: center;
 }
-.spm-value {
-  display: block;
-  margin-top: 2px;
-  font-size: 0.68rem;
-  color: var(--text-secondary);
-}
 #spm-table tbody tr {
   cursor: default;
 }
 #spm-table tbody tr:hover {
   background: none;
-}
-#spm-table th a {
-  color: inherit;
 }
 
 .detail-row td {

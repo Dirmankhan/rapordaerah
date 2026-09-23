@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Indikator SPM per Kabupaten/Kota</title>
-  <link rel="stylesheet" href="css/style.css?v=11" />
+  <link rel="stylesheet" href="css/style.css?v=12" />
 </head>
 <body>
   <header class="app-header">
@@ -19,15 +19,29 @@
   <main class="app-main">
     <div id="status-box" class="status-box" hidden></div>
 
-    <section class="panel" aria-label="Indikator SPM per kabupaten/kota">
-      <p class="muted small">
-        Klik nama kabupaten/kota pada judul kolom untuk membuka spreadsheet sumber datanya.
-      </p>
+    <section class="panel" aria-label="Filter kabupaten/kota">
+      <div class="filter-bar">
+        <div class="filters">
+          <div class="filter-item">
+            <label for="kab-select">Kabupaten/Kota</label>
+            <select id="kab-select"></select>
+          </div>
+        </div>
+      </div>
+      <p id="kab-source-link" class="result-count"></p>
+    </section>
+
+    <section class="panel" aria-label="Indikator SPM">
+      <h2>Indikator SPM</h2>
       <div class="table-scroll">
         <table id="spm-table" hidden>
-          <colgroup id="spm-colgroup"></colgroup>
           <thead>
-            <tr id="spm-head-row"></tr>
+            <tr>
+              <th>No</th>
+              <th class="col-truncate">Nama Indikator</th>
+              <th>Nilai Capaian</th>
+              <th>Label Capaian</th>
+            </tr>
           </thead>
           <tbody id="spm-body"></tbody>
         </table>
@@ -39,13 +53,13 @@
     <p>
       Sumber data:
       <a href="https://docs.google.com/spreadsheets/d/10FJs2bKhN9QU3bTpzUAf-P0iJkEdGkwjnWO9nhdViYU/edit" target="_blank" rel="noopener">sheet konfigurasi (tab "spm")</a>
-      &middot; data diambil langsung (live) dari spreadsheet Rapor Pendidikan tiap kabupaten/kota saat halaman dibuka.
+      &middot; data diambil langsung (live) dari spreadsheet Rapor Pendidikan kabupaten/kota terpilih saat halaman dibuka.
     </p>
   </footer>
 
-  <script src="js/config.js?v=11"></script>
-  <script src="js/gviz.js?v=11"></script>
-  <script src="js/shared.js?v=11"></script>
-  <script src="js/spm.js?v=11"></script>
+  <script src="js/config.js?v=12"></script>
+  <script src="js/gviz.js?v=12"></script>
+  <script src="js/shared.js?v=12"></script>
+  <script src="js/spm.js?v=12"></script>
 </body>
 </html>

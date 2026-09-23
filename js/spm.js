@@ -6,6 +6,12 @@
 
   const el = (id) => document.getElementById(id);
 
+  const state = {
+    indicators: [],
+    kabupaten: [],
+    cache: {}, // nama kabupaten -> hasil loadKabupatenData
+  };
+
   function setStatus(msg, isError) {
     const box = el("status-box");
     if (!msg) {
@@ -65,13 +71,11 @@
   async function loadKabupatenData(spreadsheetId, indicators) {
     // Kelompokkan rujukan sel per nama sheet, cari batas baris/kolom yang perlu diambil.
     const bounds = new Map(); // sheetName -> {minRow,maxRow,minCol,maxCol}
-    const refs = [];
     for (const ind of indicators) {
       for (const key of ["labelRef", "nilaiRef"]) {
         const ref = ind[key];
         if (!ref) continue;
         const parsed = Gviz.parseCellRef(ref);
-        refs.push(parsed);
         const colN = Gviz.colLetterToIndex(parsed.col);
         const b = bounds.get(parsed.sheet) || { minRow: Infinity, maxRow: -Infinity, minCol: Infinity, maxCol: -Infinity };
         b.minRow = Math.min(b.minRow, parsed.row);
@@ -107,82 +111,89 @@
     }));
   }
 
-  function renderTable(indicators, kabupaten, dataByKab) {
+  function renderTable(values) {
     const table = el("spm-table");
-    const colgroup = el("spm-colgroup");
-    const headRow = el("spm-head-row");
     const tbody = el("spm-body");
-    colgroup.innerHTML = "";
-    headRow.innerHTML = "";
     tbody.innerHTML = "";
 
-    const noWidth = 6;
-    const namaWidth = 20;
-    const kabWidth = (100 - noWidth - namaWidth) / kabupaten.length;
-
-    const addCol = (width) => {
-      const c = document.createElement("col");
-      c.style.width = width + "%";
-      colgroup.appendChild(c);
-    };
-    addCol(noWidth);
-    addCol(namaWidth);
-
-    const thNo = document.createElement("th");
-    thNo.textContent = "No";
-    const thNama = document.createElement("th");
-    thNama.textContent = "Nama Indikator";
-    thNama.className = "col-truncate";
-    headRow.appendChild(thNo);
-    headRow.appendChild(thNama);
-
-    for (const kab of kabupaten) {
-      addCol(kabWidth);
-      const th = document.createElement("th");
-      const id = CFG.SPM_SOURCE_BY_TITLE[kab.sumberTitle];
-      if (id) {
-        const a = document.createElement("a");
-        a.href = "https://docs.google.com/spreadsheets/d/" + id + "/edit";
-        a.target = "_blank";
-        a.rel = "noopener";
-        a.textContent = kab.nama;
-        th.appendChild(a);
-      } else {
-        th.textContent = kab.nama;
-      }
-      headRow.appendChild(th);
-    }
-
-    indicators.forEach((ind, i) => {
+    state.indicators.forEach((ind, i) => {
+      const v = values[i];
       const tr = document.createElement("tr");
+
       const tdNo = document.createElement("td");
       tdNo.textContent = ind.no;
       const tdNama = document.createElement("td");
       tdNama.className = "col-truncate";
       tdNama.textContent = ind.nama;
       tdNama.title = ind.nama;
+      const tdNilai = document.createElement("td");
+      const tdLabel = document.createElement("td");
+      tdLabel.className = "col-indicator";
+
+      if (!v || v.label === null || v.label === undefined || v.label === "") {
+        tdNilai.textContent = "-";
+        tdLabel.innerHTML = "<span class='chip chip-muted'>-</span>";
+      } else {
+        tdNilai.textContent = v.nilai === null || v.nilai === undefined || v.nilai === "" ? "-" : v.nilai;
+        tdLabel.innerHTML = chipHtml(v.label);
+      }
+
       tr.appendChild(tdNo);
       tr.appendChild(tdNama);
-
-      for (const kab of kabupaten) {
-        const v = (dataByKab[kab.nama] || [])[i];
-        const td = document.createElement("td");
-        td.className = "col-indicator";
-        if (!v || v.label === null || v.label === undefined || v.label === "") {
-          td.innerHTML = "<span class='chip chip-muted'>-</span>";
-        } else {
-          td.innerHTML =
-            chipHtml(v.label) +
-            (v.nilai !== null && v.nilai !== undefined && v.nilai !== ""
-              ? "<span class='spm-value'>" + escapeHtml(v.nilai) + "</span>"
-              : "");
-        }
-        tr.appendChild(td);
-      }
+      tr.appendChild(tdNilai);
+      tr.appendChild(tdLabel);
       tbody.appendChild(tr);
     });
 
     table.hidden = false;
+  }
+
+  async function showKabupaten(nama) {
+    const kab = state.kabupaten.find((k) => k.nama === nama);
+    if (!kab) return;
+
+    const id = CFG.SPM_SOURCE_BY_TITLE[kab.sumberTitle];
+    const sourceLink = el("kab-source-link");
+    sourceLink.innerHTML = id
+      ? "Sumber data: <a href='https://docs.google.com/spreadsheets/d/" +
+        id +
+        "/edit' target='_blank' rel='noopener'>" +
+        escapeHtml(kab.sumberTitle) +
+        "</a>"
+      : "";
+
+    if (!id) {
+      setStatus('ID spreadsheet sumber untuk "' + kab.sumberTitle + '" belum terdaftar di SPM_SOURCE_BY_TITLE.', true);
+      el("spm-table").hidden = true;
+      return;
+    }
+
+    if (!state.cache[nama]) {
+      setStatus("Mengambil data " + nama + "...", false);
+      try {
+        state.cache[nama] = await loadKabupatenData(id, state.indicators);
+      } catch (err) {
+        console.error(err);
+        setStatus("Gagal memuat data " + nama + ": " + err.message, true);
+        el("spm-table").hidden = true;
+        return;
+      }
+    }
+
+    renderTable(state.cache[nama]);
+    setStatus("");
+  }
+
+  function renderKabupatenSelect() {
+    const select = el("kab-select");
+    select.innerHTML = "";
+    for (const kab of state.kabupaten) {
+      const opt = document.createElement("option");
+      opt.value = kab.nama;
+      opt.textContent = kab.nama;
+      select.appendChild(opt);
+    }
+    select.addEventListener("change", () => showKabupaten(select.value));
   }
 
   async function main() {
@@ -190,33 +201,11 @@
       setStatus("Membaca daftar indikator SPM...", false);
       const { indicators, kabupaten } = await loadSpmConfig();
       if (kabupaten.length === 0) throw new Error("Daftar Kabupaten/Kota tidak ditemukan di sheet spm.");
+      state.indicators = indicators;
+      state.kabupaten = kabupaten;
 
-      const missing = kabupaten.filter((k) => !CFG.SPM_SOURCE_BY_TITLE[k.sumberTitle]);
-      if (missing.length) {
-        console.warn(
-          "ID spreadsheet sumber belum terdaftar di SPM_SOURCE_BY_TITLE untuk: " +
-            missing.map((k) => k.sumberTitle).join(", ")
-        );
-      }
-
-      const dataByKab = {};
-      for (const kab of kabupaten) {
-        const id = CFG.SPM_SOURCE_BY_TITLE[kab.sumberTitle];
-        if (!id) {
-          dataByKab[kab.nama] = [];
-          continue;
-        }
-        setStatus("Mengambil data " + kab.nama + "...", false);
-        dataByKab[kab.nama] = await loadKabupatenData(id, indicators);
-      }
-
-      renderTable(indicators, kabupaten, dataByKab);
-      setStatus(
-        missing.length
-          ? "Data sumber belum terdaftar untuk: " + missing.map((k) => k.nama).join(", ") + "."
-          : "",
-        missing.length > 0
-      );
+      renderKabupatenSelect();
+      await showKabupaten(kabupaten[0].nama);
     } catch (err) {
       console.error(err);
       setStatus(
