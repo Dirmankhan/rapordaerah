@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Indikator SPM per Kabupaten/Kota</title>
+  <link rel="stylesheet" href="css/style.css?v=11" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>Indikator SPM per Kabupaten/Kota</h1>
+    <p class="subtitle">Provinsi Nusa Tenggara Barat &middot; Label &amp; Nilai Capaian 2025</p>
+    <nav class="app-nav">
+      <a href="index.html" class="app-nav-link">Rapor Satuan Pendidikan</a>
+      <a href="spm.html" class="app-nav-link active">Indikator SPM Kab./Kota</a>
+    </nav>
+  </header>
+
+  <main class="app-main">
+    <div id="status-box" class="status-box" hidden></div>
+
+    <section class="panel" aria-label="Indikator SPM per kabupaten/kota">
+      <p class="muted small">
+        Klik nama kabupaten/kota pada judul kolom untuk membuka spreadsheet sumber datanya.
+      </p>
+      <div class="table-scroll">
+        <table id="spm-table" hidden>
+          <colgroup id="spm-colgroup"></colgroup>
+          <thead>
+            <tr id="spm-head-row"></tr>
+          </thead>
+          <tbody id="spm-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <p>
+      Sumber data:
+      <a href="https://docs.google.com/spreadsheets/d/10FJs2bKhN9QU3bTpzUAf-P0iJkEdGkwjnWO9nhdViYU/edit" target="_blank" rel="noopener">sheet konfigurasi (tab "spm")</a>
+      &middot; data diambil langsung (live) dari spreadsheet Rapor Pendidikan tiap kabupaten/kota saat halaman dibuka.
+    </p>
+  </footer>
+
+  <script src="js/config.js?v=11"></script>
+  <script src="js/gviz.js?v=11"></script>
+  <script src="js/shared.js?v=11"></script>
+  <script src="js/spm.js?v=11"></script>
+</body>
+</html>

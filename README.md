@@ -47,24 +47,46 @@ dashboard.
 
 ## Fitur
 
-- **Filter**: Kabupaten/Kota, Jenis Satuan Pendidikan, Status Satuan
+### Halaman "Rapor Satuan Pendidikan" (`index.html`)
+
+- **Filter**: Kabupaten/Kota, Kecamatan (multi-pilih, mengikuti
+  Kabupaten/Kota), Jenis Satuan Pendidikan (multi-pilih), Status Satuan
   Pendidikan, serta pencarian NPSN/nama sekolah.
 - **Ringkasan indikator**: distribusi Label Capaian untuk A.1 Kemampuan
-  literasi, A.2 Kemampuan numerasi, A.3 Karakter, dan D.1 Kualitas
-  pembelajaran, mengikuti hasil filter yang aktif.
+  literasi, A.2 Kemampuan numerasi, A.3 Karakter, D.1 Kualitas
+  pembelajaran, D.4 Iklim keamanan, D.8 Iklim Kebinekaan, dan indikator
+  prioritas SMK (A.4, D.17), mengikuti hasil filter yang aktif.
 - **Tabel detail**: daftar satuan pendidikan sesuai filter, dengan badge
   warna per indikator; klik baris untuk melihat rincian lengkap (Label
   Capaian, Nilai Capaian, Perubahan dari Tahun 2024, Perubahan Nilai,
-  Peringkat di Kab./Kota).
+  Peringkat di Kab./Kota). Kolom indikator A.4/D.17 (khusus jenjang SMK)
+  otomatis muncul/hilang dan dikosongkan untuk satuan pendidikan non-SMK.
+
+### Halaman "Indikator SPM Kab./Kota" (`spm.html`)
+
+Matriks Label & Nilai Capaian 2025 tiap indikator SPM untuk 10
+kabupaten/kota di NTB, dibaca dari tab **`spm`** pada sheet konfigurasi:
+kolom A/B (No/Nama Indikator), C/D (rujukan sel Label/Nilai Capaian 2025 —
+rujukan yang sama dipakai ke seluruh kabupaten/kota, masing-masing dari
+spreadsheet Rapor Pendidikan kabupaten/kota-nya sendiri), dan kolom I/J
+(nama Kabupaten/Kota + judul spreadsheet sumbernya).
+
+Karena sel J hanya berisi **judul** file (bukan ID), pemetaan judul → ID
+spreadsheet disimpan manual di `js/config.js` → `SPM_SOURCE_BY_TITLE`. Saat
+ada kabupaten/kota baru atau file sumbernya berganti, perbarui/tambahkan
+entrinya di situ (cari ID lewat Drive, bagian `.../d/<ID>/edit` pada URL).
 
 ## Struktur berkas
 
 ```
-index.html        Struktur halaman
-css/style.css      Tampilan (mendukung mode gelap otomatis)
-js/config.js       ID spreadsheet & daftar indikator yang ditampilkan
-js/gviz.js         Pembaca Google Sheets via Google Visualization API
-js/app.js          Logika pengambilan data, filter, dan render dashboard
+index.html         Halaman Rapor Satuan Pendidikan
+spm.html            Halaman Indikator SPM per Kabupaten/Kota
+css/style.css       Tampilan bersama kedua halaman (mendukung mode gelap otomatis)
+js/config.js        ID spreadsheet, daftar indikator, & peta sumber SPM per kabupaten
+js/gviz.js          Pembaca Google Sheets via Google Visualization API
+js/shared.js        Util bersama: warna kategori, badge chip, escape HTML
+js/app.js           Logika halaman Rapor Satuan Pendidikan
+js/spm.js           Logika halaman Indikator SPM per Kabupaten/Kota
 ```
 
 ## Catatan teknis
@@ -80,9 +102,20 @@ js/app.js          Logika pengambilan data, filter, dan render dashboard
   domain `docs.google.com` diblokir oleh kebijakan proxy sandbox. Mohon uji
   dengan membuka halaman di browser biasa (lingkungan pengguna tidak
   memiliki batasan ini) setelah deploy.
-- `index.html` memuat `css/style.css` dan berkas di `js/` dengan query
-  `?v=<angka>` supaya browser tidak menampilkan versi lama dari cache
-  setelah deploy baru. Saat mengubah salah satu berkas tersebut, naikkan
-  angka `?v=` di `index.html` (mis. dari `?v=2` ke `?v=3`). Jika dashboard
-  tampak belum menampilkan perubahan terbaru
-  meski deploy sudah sukses, coba hard refresh (Ctrl/Cmd+Shift+R).
+- `index.html` dan `spm.html` memuat `css/style.css` dan berkas di `js/`
+  dengan query `?v=<angka>` supaya browser tidak menampilkan versi lama
+  dari cache setelah deploy baru. Saat mengubah salah satu berkas
+  tersebut, naikkan angka `?v=` di kedua HTML. Jika dashboard tampak
+  belum menampilkan perubahan terbaru meski deploy sudah sukses, coba
+  hard refresh (Ctrl/Cmd+Shift+R).
+- Beberapa judul file sumber di Drive ternyata memiliki **duplikat** (judul
+  sama, ID berbeda, folder berbeda) — mis. `RAPOR-KAB-LOMBOK-UTARA-DATA-2025`
+  ada 2 salinan. `SPM_SOURCE_BY_TITLE` di `js/config.js` memilih salinan
+  dengan waktu modifikasi terbaru di folder yang tampak aktif dipakai. Jika
+  ternyata salah pilih, perbarui ID-nya secara manual.
+- Beberapa baris indikator di sheet `spm` (kolom C/D, mis. B.10–D.10 SD)
+  saat ini merujuk ke sel yang sama persis (`E2214`/`F2214`), kemungkinan
+  salah isi/copy-paste saat sheet dibuat. Ini bukan bug di kode — dashboard
+  membaca apa adanya dari sheet. Mohon cek & perbaiki rujukan selnya di
+  sheet `spm` bila perlu; halaman akan otomatis menampilkan data yang benar
+  begitu diperbaiki.

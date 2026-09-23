@@ -26,6 +26,20 @@
   }
 
   /**
+   * Parse referensi 1 sel seperti "2. CAPAIAN KABKOT!E3625" menjadi
+   * { sheet, col, row } (kolom huruf, baris angka).
+   */
+  function parseCellRef(ref) {
+    const bangIdx = ref.lastIndexOf("!");
+    if (bangIdx === -1) throw new Error("Referensi sel tidak valid: " + ref);
+    const sheet = ref.slice(0, bangIdx);
+    const cell = ref.slice(bangIdx + 1);
+    const m = cell.match(/^([A-Z]+)(\d+)$/);
+    if (!m) throw new Error("Format sel tidak dikenali: " + cell);
+    return { sheet: sheet, col: m[1], row: parseInt(m[2], 10) };
+  }
+
+  /**
    * Parse referensi seperti:
    *   "5. CAPAIAN SATDIK-DASMEN VOKASI!A7:F9312"
    * menjadi { sheet, startCol, startRow, endCol, endRow } (kolom huruf, baris angka).
@@ -88,6 +102,15 @@
     return parseGvizResponse(text);
   }
 
+  /** Ambil rentang "Sheet!A1:B2" apa adanya (tanpa asumsi baris header di atasnya). */
+  async function fetchRange(spreadsheetId, sheetName, a1Range) {
+    const url = gvizUrl(spreadsheetId, sheetName, a1Range);
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("HTTP " + res.status + " saat mengambil " + sheetName + "!" + a1Range);
+    const text = await res.text();
+    return parseGvizResponse(text);
+  }
+
   /**
    * Ambil sebuah rentang "Sheet!A1:B2" dari spreadsheet, mengembalikan
    * { header: [...5 label kolom dari 1 baris di atas startRow...], rows: [[..],[..]] }
@@ -111,10 +134,12 @@
   window.Gviz = {
     colLetterToIndex,
     colIndexToLetter,
+    parseCellRef,
     parseRangeRef,
     gvizUrl,
     parseGvizResponse,
     fetchSheetRaw,
+    fetchRange,
     fetchRangeWithHeader,
   };
 })();

@@ -2,32 +2,8 @@
   "use strict";
 
   const CFG = window.DASHBOARD_CONFIG;
+  const { categorize, trendArrow, escapeHtml } = window.Shared;
   const PAGE_SIZE = 25;
-
-  // Warna tetap per kategori Label Capaian (bukan tangga ordinal): Baik/Tinggi
-  // = hijau, Sedang = oranye, Kurang/Rendah = merah, Tidak Tersedia = abu.
-  const MUTED = "#898781";
-  const GOOD = "#0ca30c";
-  const ORANGE = "#eb6834";
-  const CRITICAL = "#d03b3b";
-
-  // Kata kunci label, dicek berurutan (yang paling spesifik/negatif duluan
-  // supaya "kurang baik" dsb. tidak salah kena cocokkan sebagai "baik").
-  const CATEGORY_RULES = [
-    { rank: 3, color: MUTED, test: (l) => l.indexOf("tidak tersedia") >= 0 },
-    { rank: 2, color: CRITICAL, test: (l) => /rendah|kurang/.test(l) },
-    { rank: 0, color: GOOD, test: (l) => /tinggi|baik/.test(l) },
-    { rank: 1, color: ORANGE, test: (l) => /sedang|menengah|cukup/.test(l) },
-  ];
-
-  function categorize(label) {
-    if (!label) return { rank: 3, color: MUTED };
-    const l = String(label).toLowerCase();
-    for (const rule of CATEGORY_RULES) {
-      if (rule.test(l)) return { rank: rule.rank, color: rule.color };
-    }
-    return { rank: 3, color: MUTED };
-  }
 
   const state = {
     identityHeader: CFG.IDENTITY_FIELDS,
@@ -215,23 +191,6 @@
     });
     state.page = 1;
     state.expandedIdx = null;
-  }
-
-  // ---------------------------------------------------------------------
-  // Warna & label kategori (dipakai langsung dari `categorize()` di atas)
-  // ---------------------------------------------------------------------
-
-  function trendArrow(text) {
-    if (!text) return { symbol: "", color: MUTED, text: "-" };
-    const t = String(text).toLowerCase();
-    if (t.startsWith("naik")) return { symbol: "▲", color: GOOD, text: String(text) };
-    if (t.startsWith("turun")) return { symbol: "▼", color: CRITICAL, text: String(text) };
-    if (t.startsWith("tetap")) return { symbol: "▬", color: MUTED, text: String(text) };
-    return { symbol: "", color: MUTED, text: String(text) };
-  }
-
-  function escapeHtml(s) {
-    return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   }
 
   // ---------------------------------------------------------------------

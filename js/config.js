@@ -63,4 +63,34 @@ window.DASHBOARD_CONFIG = {
     { key: "A.4 Penyerapan lulusan SMK", label: "A.4 Penyerapan lulusan SMK", smkOnly: true },
     { key: "D.17 Link and match dengan dunia kerja", label: "D.17 Link and match dengan dunia kerja", smkOnly: true },
   ],
+
+  // --- Halaman Indikator SPM per Kabupaten/Kota (spm.html) ---------------
+  //
+  // Sheet "spm" di CONFIG_SHEET_ID berisi:
+  //   Kolom A: No Indikator, B: Nama Indikator,
+  //   Kolom C: lokasi sel Label Capaian 2025 (format "NamaSheet!A1"),
+  //   Kolom D: lokasi sel Nilai Capaian 2025 (format "NamaSheet!A1"),
+  //   Kolom I: nama Kabupaten/Kota, J: judul spreadsheet sumber datanya.
+  // Kolom C/D adalah RUJUKAN SEL yang SAMA dipakai untuk seluruh
+  // kabupaten/kota (setiap file sumber per kabupaten diasumsikan memakai
+  // template baris/kolom yang identik).
+  SPM_SHEET_NAME: "spm",
+
+  // Karena sel J hanya berisi JUDUL file (bukan ID/URL), pemetaan judul ->
+  // ID spreadsheet Google Sheets harus dijaga manual di sini. Jika ada
+  // Kabupaten/Kota baru atau file sumbernya diganti (mis. tahun 2026),
+  // tambahkan/perbarui entri di bawah (cari ID lewat Drive, ambil dari
+  // bagian ".../d/<ID>/edit" pada URL spreadsheet).
+  SPM_SOURCE_BY_TITLE: {
+    "RAPOR-KAB-SUMBAWA-BARAT-DATA-2025": "1Ac3MSEGvNAvkNt6LFbhfeDhyNYC_-hIahWazLteqTcs",
+    "RAPOR-KAB-LOMBOK-UTARA-DATA-2025": "1MujUwJVORyF9tTmrY2lA2D65co3UUngkOXyhLtQMJd0",
+    "RAPOR-KAB-LOMBOK-TENGAH-DATA-2025": "1V9SRN_Ugb7xYecAtskXDwKEVXy_ww8c9AUAHwFM1Q-Y",
+    "RAPOR-KAB-LOMBOK-TIMUR-DATA-2025": "1WJjqnyOVMvFkhW2w40848a7vc3vY-oc2OskjVTNJhWU",
+    "RAPOR-KAB-LOMBOK-BARAT-DATA-2025": "1HKJDL-q42kaiQCq2m1aun-XlTBoWpJM1Rk0CRx6m2To",
+    "RAPOR-KOTA-MATARAM-DATA-2025": "1-P1F7V7Nt8kq95VCCZ4VXgiklezGvvOjoOidA9vh0NE",
+    "RAPOR-KAB-SUMBAWA-DATA-2025": "1s-BR8wFVN-XEKf75l530wEaXvTUDnsP1DqD2tpxyvJM",
+    "RAPOR-KAB-DOMPU-DATA-2025": "1oOgdSHJlm5aePfOKEonpa54b3Btd5TV2SVihwF56jUU",
+    "RAPOR-KAB-BIMA-DATA-2025": "1BbeJss6ihO6c5Pqtdnin20ZP2ETOQS4A-OmFqMlmTYY",
+    "RAPOR-KOTA-BIMA-DATA-2025": "1sjUTXBINeuj9qAMbUzX6xHxBY10Y5AvZ14RtOL5iMd0",
+  },
 };

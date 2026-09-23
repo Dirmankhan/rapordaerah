@@ -55,6 +55,28 @@ body {
   margin: 0;
   color: var(--text-secondary);
 }
+.app-nav {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.app-nav-link {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--gridline);
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+.app-nav-link:hover {
+  background: var(--surface-1);
+}
+.app-nav-link.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #ffffff;
+}
 
 .app-main {
   max-width: 1400px;
@@ -352,6 +374,21 @@ tr.row-expanded {
 }
 .col-indicator {
   text-align: center;
+}
+.spm-value {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+}
+#spm-table tbody tr {
+  cursor: default;
+}
+#spm-table tbody tr:hover {
+  background: none;
+}
+#spm-table th a {
+  color: inherit;
 }
 
 .detail-row td {
