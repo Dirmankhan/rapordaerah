@@ -414,7 +414,9 @@
       }
 
       for (const ind of state.visibleIndicators) {
-        const v = s.indikator[ind.key];
+        // Indikator khusus SMK (mis. A.4, D.17) dikosongkan untuk satuan
+        // pendidikan non-SMK, walau kebetulan ada nilai di sheet sumber.
+        const v = ind.smkOnly && !isSMK(s.jenis) ? null : s.indikator[ind.key];
         const td = document.createElement("td");
         td.className = "col-indicator";
         if (!v || !v.label) {
@@ -466,7 +468,7 @@
     const wrap = document.createElement("div");
     wrap.className = "detail-panel";
     for (const ind of CFG.INDICATORS) {
-      const v = s.indikator[ind.key];
+      const v = ind.smkOnly && !isSMK(s.jenis) ? null : s.indikator[ind.key];
       const box = document.createElement("div");
       box.className = "detail-indicator";
       const h = document.createElement("h4");
