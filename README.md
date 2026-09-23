@@ -64,20 +64,47 @@ dashboard.
 
 ### Halaman "Indikator SPM Kab./Kota" (`spm.html`)
 
-Filter dropdown **Kabupaten/Kota**; tabelnya menampilkan No Indikator,
-Nama Indikator, Nilai Capaian, dan Label Capaian (2025) untuk kabupaten/kota
-yang dipilih. Data dibaca dari tab **`spm`** pada sheet konfigurasi: kolom
-A/B (No/Nama Indikator), C/D (rujukan sel Label/Nilai Capaian 2025 — rujukan
-yang sama dipakai ke seluruh kabupaten/kota, masing-masing dari spreadsheet
-Rapor Pendidikan kabupaten/kota-nya sendiri), dan kolom I/J (nama
-Kabupaten/Kota + judul spreadsheet sumbernya). Data tiap kabupaten diambil
-sekali saat pertama dipilih lalu disimpan di memori (tidak diambil ulang
-saat berpindah-pindah kabupaten dalam sesi yang sama).
+Filter dropdown **Kabupaten/Kota**; tabelnya menampilkan No Indikator, Nama
+Indikator, Nilai Capaian, dan Label Capaian (2025) untuk kabupaten/kota yang
+dipilih. Data diambil langsung dari spreadsheet Rapor Pendidikan
+kabupaten/kota itu sendiri (bukan dari sheet konfigurasi), berdasarkan
+rujukan sel yang disimpan di tab **`spm`** pada sheet konfigurasi.
 
-Karena sel J hanya berisi **judul** file (bukan ID), pemetaan judul → ID
-spreadsheet disimpan manual di `js/config.js` → `SPM_SOURCE_BY_TITLE`. Saat
-ada kabupaten/kota baru atau file sumbernya berganti, perbarui/tambahkan
-entrinya di situ (cari ID lewat Drive, bagian `.../d/<ID>/edit` pada URL).
+**Penting:** rujukan sel Label/Nilai Capaian **berbeda-beda per
+kabupaten/kota** — indikator yang sama ("Kemampuan literasi SD" misalnya)
+bisa berada di baris yang berbeda di tiap file kabupaten/kota, karena
+masing-masing file dibuat terpisah. Karena itu sheet `spm` memakai format
+**satu baris per pasangan (indikator, kabupaten/kota)**, bukan satu rujukan
+yang dipakai untuk semua:
+
+| No Indikator | Nama Indikator | Wilayah | Label Capaian 2025 | Nilai Capaian 2025 |
+|---|---|---|---|---|
+| A.1.skor | Kemampuan literasi SD | Kabupaten Sumbawa Barat | `2. CAPAIAN KABKOT!E3625` | `2. CAPAIAN KABKOT!F3625` |
+| A.1.skor | Kemampuan literasi SD | Kabupaten Lombok Utara | `2. CAPAIAN KABKOT!E1198` | `2. CAPAIAN KABKOT!F1198` |
+| … | … | … | … | … |
+
+- Kolom **Wilayah** harus berisi nama kabupaten/kota persis sama dengan
+  nama di daftar kabupaten/kota (lihat di bawah).
+  isi rujukan selnya dengan cara membuka spreadsheet kabupaten/kota
+  tersebut, cari baris indikatornya di sheet `2. CAPAIAN KABKOT`, lalu
+  salin referensi sel Label Capaian 2025 dan Nilai Capaian 2025-nya
+  (format `NamaSheet!A1`).
+- Belum sempat isi semua kabupaten/kota sekaligus? Tidak apa — baris yang
+  belum ada untuk suatu (indikator, kabupaten/kota) otomatis tampil "-" di
+  halaman, bukan error. Bisa dicicil.
+- Terpisah dari tabel di atas, sheet `spm` juga perlu daftar kabupaten/kota
+  (kolom **Kabupaten** + **Sumber data** = judul spreadsheet sumbernya) —
+  bagian ini sudah ada dan tidak berubah dari sebelumnya.
+
+Karena kolom "Sumber data" hanya berisi **judul** file (bukan ID), pemetaan
+judul → ID spreadsheet disimpan manual di `js/config.js` →
+`SPM_SOURCE_BY_TITLE`. Saat ada kabupaten/kota baru atau file sumbernya
+berganti, perbarui/tambahkan entrinya di situ (cari ID lewat Drive, bagian
+`.../d/<ID>/edit` pada URL).
+
+Data tiap kabupaten/kota diambil sekali saat pertama dipilih di dropdown,
+lalu disimpan di memori (tidak diambil ulang saat bolak-balik pilihan dalam
+sesi yang sama).
 
 ## Struktur berkas
 

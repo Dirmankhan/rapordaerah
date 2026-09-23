@@ -66,14 +66,30 @@ window.DASHBOARD_CONFIG = {
 
   // --- Halaman Indikator SPM per Kabupaten/Kota (spm.html) ---------------
   //
-  // Sheet "spm" di CONFIG_SHEET_ID berisi:
-  //   Kolom A: No Indikator, B: Nama Indikator,
-  //   Kolom C: lokasi sel Label Capaian 2025 (format "NamaSheet!A1"),
-  //   Kolom D: lokasi sel Nilai Capaian 2025 (format "NamaSheet!A1"),
-  //   Kolom I: nama Kabupaten/Kota, J: judul spreadsheet sumber datanya.
-  // Kolom C/D adalah RUJUKAN SEL yang SAMA dipakai untuk seluruh
-  // kabupaten/kota (setiap file sumber per kabupaten diasumsikan memakai
-  // template baris/kolom yang identik).
+  // Sheet "spm" di CONFIG_SHEET_ID punya 2 bagian:
+  //
+  // 1) Tabel indikator x kabupaten/kota (SATU BARIS PER PASANGAN indikator+
+  //    kabupaten/kota, karena baris/kolom indikator yang sama bisa ada di
+  //    posisi sel yang BERBEDA di tiap file kabupaten/kota — tidak bisa
+  //    pakai 1 rujukan sel untuk semua kabupaten):
+  //      Kolom "No Indikator", "Nama Indikator"
+  //      Kolom "Wilayah"            -> nama kabupaten/kota baris ini berlaku
+  //                                    (harus sama persis dengan nama di
+  //                                    daftar kabupaten/kota, lihat poin 2)
+  //      Kolom "Label Capaian 2025" -> lokasi sel, format "NamaSheet!A1"
+  //      Kolom "Nilai Capaian 2025" -> lokasi sel, format "NamaSheet!A1"
+  //    Boleh belum lengkap: kabupaten/kota yang belum ada barisnya untuk
+  //    suatu indikator otomatis tampil "-" (Tidak Tersedia) di halaman,
+  //    bukan error.
+  //
+  // 2) Daftar kabupaten/kota (boleh di kolom mana pun, dipakai untuk isi
+  //    dropdown filter & mencari ID spreadsheet sumbernya):
+  //      Kolom "Kabupaten"    -> nama kabupaten/kota
+  //      Kolom "Sumber data"  -> judul spreadsheet sumber datanya (harus
+  //                              terdaftar di SPM_SOURCE_BY_TITLE di bawah)
+  //
+  // Nama header dideteksi otomatis (tidak harus di kolom tertentu), asal
+  // kata-katanya seperti di atas.
   SPM_SHEET_NAME: "spm",
 
   // Karena sel J hanya berisi JUDUL file (bukan ID/URL), pemetaan judul ->

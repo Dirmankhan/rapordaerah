@@ -7,9 +7,10 @@
   const el = (id) => document.getElementById(id);
 
   const state = {
-    indicators: [],
+    rows: [], // 1 baris = 1 pasangan (indikator, kabupaten/kota) dgn rujukan selnya sendiri
+    indicatorOrder: [], // daftar indikator unik (no+nama), urutan kemunculan pertama
     kabupaten: [],
-    cache: {}, // nama kabupaten -> hasil loadKabupatenData
+    cache: {}, // nama kabupaten -> array hasil selaras dgn indicatorOrder
   };
 
   function setStatus(msg, isError) {
@@ -30,8 +31,13 @@
     return -1;
   }
 
-  /** Baca sheet "spm": daftar indikator (kol. No/Nama/ref Label/ref Nilai)
-   * dan daftar kabupaten/kota (kol. Kabupaten/Sumber data). */
+  const indicatorKey = (no, nama) => no + "|" + nama;
+
+  /** Baca sheet "spm": tiap baris = 1 pasangan (indikator, kabupaten/kota)
+   * dengan rujukan sel Label/Nilai Capaian 2025 miliknya sendiri (kolom
+   * "Wilayah" menandai kabupaten/kota mana baris itu berlaku), plus daftar
+   * nama kabupaten/kota & judul spreadsheet sumbernya (kolom Kabupaten/
+   * Sumber data). */
   async function loadSpmConfig() {
     const raw = await Gviz.fetchSheetRaw(CFG.CONFIG_SHEET_ID, CFG.SPM_SHEET_NAME);
     if (raw.length < 2) throw new Error('Sheet "' + CFG.SPM_SHEET_NAME + '" kosong / format tidak dikenali.');
@@ -39,41 +45,52 @@
     const idx = {
       no: findCol(header, /no\.?\s*indikator/),
       nama: findCol(header, /nama indikator/),
+      wilayah: findCol(header, /wilayah/),
       label: findCol(header, /label capaian 2025/),
       nilai: findCol(header, /nilai capaian 2025/),
-      kab: findCol(header, /kabupaten/),
+      kab: findCol(header, /^kabupaten$|daftar kabupaten/),
       sumber: findCol(header, /sumber data/),
     };
     for (const [key, i] of Object.entries(idx)) {
       if (i === -1) throw new Error('Kolom "' + key + '" tidak ditemukan di header sheet "' + CFG.SPM_SHEET_NAME + '".');
     }
 
-    const indicators = [];
+    const rows = [];
+    const indicatorOrder = [];
+    const seen = new Set();
     const kabupaten = [];
     for (const row of raw.slice(1)) {
-      if (row[idx.no] || row[idx.nama]) {
-        indicators.push({
-          no: row[idx.no] ?? "",
-          nama: row[idx.nama] ?? "",
+      const no = row[idx.no] ?? "";
+      const nama = row[idx.nama] ?? "";
+      if (no || nama) {
+        rows.push({
+          no,
+          nama,
+          wilayah: row[idx.wilayah] ?? "",
           labelRef: row[idx.label] ?? null,
           nilaiRef: row[idx.nilai] ?? null,
         });
+        const key = indicatorKey(no, nama);
+        if (!seen.has(key)) {
+          seen.add(key);
+          indicatorOrder.push({ no, nama });
+        }
       }
       if (row[idx.kab]) {
         kabupaten.push({ nama: row[idx.kab], sumberTitle: row[idx.sumber] ?? "" });
       }
     }
-    return { indicators, kabupaten };
+    return { rows, indicatorOrder, kabupaten };
   }
 
-  /** Ambil label+nilai capaian 2025 semua indikator untuk satu kabupaten,
-   * dengan sesedikit mungkin request (satu fetch per nama sheet rujukan). */
-  async function loadKabupatenData(spreadsheetId, indicators) {
-    // Kelompokkan rujukan sel per nama sheet, cari batas baris/kolom yang perlu diambil.
+  /** Ambil label+nilai capaian 2025 untuk sekumpulan baris (indikator) dari
+   * satu spreadsheet kabupaten, dengan sesedikit mungkin request (satu
+   * fetch per nama sheet rujukan yang dipakai). */
+  async function fetchCellValues(spreadsheetId, rowsWithRefs) {
     const bounds = new Map(); // sheetName -> {minRow,maxRow,minCol,maxCol}
-    for (const ind of indicators) {
+    for (const r of rowsWithRefs) {
       for (const key of ["labelRef", "nilaiRef"]) {
-        const ref = ind[key];
+        const ref = r[key];
         if (!ref) continue;
         const parsed = Gviz.parseCellRef(ref);
         const colN = Gviz.colLetterToIndex(parsed.col);
@@ -105,10 +122,7 @@
       return row ? row[c] ?? null : null;
     }
 
-    return indicators.map((ind) => ({
-      label: readCell(ind.labelRef),
-      nilai: readCell(ind.nilaiRef),
-    }));
+    return rowsWithRefs.map((r) => ({ label: readCell(r.labelRef), nilai: readCell(r.nilaiRef) }));
   }
 
   function renderTable(values) {
@@ -116,7 +130,7 @@
     const tbody = el("spm-body");
     tbody.innerHTML = "";
 
-    state.indicators.forEach((ind, i) => {
+    state.indicatorOrder.forEach((ind, i) => {
       const v = values[i];
       const tr = document.createElement("tr");
 
@@ -169,14 +183,26 @@
     }
 
     if (!state.cache[nama]) {
-      setStatus("Mengambil data " + nama + "...", false);
-      try {
-        state.cache[nama] = await loadKabupatenData(id, state.indicators);
-      } catch (err) {
-        console.error(err);
-        setStatus("Gagal memuat data " + nama + ": " + err.message, true);
-        el("spm-table").hidden = true;
-        return;
+      const rowsForKab = state.rows.filter((r) => r.wilayah === nama);
+      if (rowsForKab.length === 0) {
+        // Belum ada baris rujukan untuk kabupaten/kota ini di sheet spm —
+        // tampilkan daftar indikator apa adanya dgn "-" (Tidak Tersedia).
+        state.cache[nama] = state.indicatorOrder.map(() => null);
+      } else {
+        setStatus("Mengambil data " + nama + "...", false);
+        try {
+          const values = await fetchCellValues(id, rowsForKab);
+          const byKey = {};
+          rowsForKab.forEach((r, i) => {
+            byKey[indicatorKey(r.no, r.nama)] = values[i];
+          });
+          state.cache[nama] = state.indicatorOrder.map((ind) => byKey[indicatorKey(ind.no, ind.nama)] || null);
+        } catch (err) {
+          console.error(err);
+          setStatus("Gagal memuat data " + nama + ": " + err.message, true);
+          el("spm-table").hidden = true;
+          return;
+        }
       }
     }
 
@@ -199,9 +225,10 @@
   async function main() {
     try {
       setStatus("Membaca daftar indikator SPM...", false);
-      const { indicators, kabupaten } = await loadSpmConfig();
+      const { rows, indicatorOrder, kabupaten } = await loadSpmConfig();
       if (kabupaten.length === 0) throw new Error("Daftar Kabupaten/Kota tidak ditemukan di sheet spm.");
-      state.indicators = indicators;
+      state.rows = rows;
+      state.indicatorOrder = indicatorOrder;
       state.kabupaten = kabupaten;
 
       renderKabupatenSelect();
