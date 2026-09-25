@@ -216,9 +216,14 @@
     ];
   }
 
-  function labelTooltipHtml(title, stats) {
+  /** `maxWidthPx` opsional: batasi lebar tooltip supaya kira-kira tidak
+   * lebih lebar dari wilayah yang dilabelinya di layar (mode kabupaten). */
+  function labelTooltipHtml(title, stats, maxWidthPx) {
+    const styleAttr = maxWidthPx ? " style='max-width:" + Math.round(maxWidthPx) + "px'" : "";
     return (
-      "<div class='peta-popup'><h4>" +
+      "<div class='peta-popup'" +
+      styleAttr +
+      "><h4>" +
       escapeHtml(title) +
       "</h4><dl>" +
       statsRows(stats)
@@ -239,7 +244,7 @@
     return layer.getBounds().getCenter();
   }
 
-  function centroidOfKab(kabNorm) {
+  function boundsOfKab(kabNorm) {
     const bounds = [];
     state.geoLayer.eachLayer((layer) => {
       if (normKabKota(layer.feature.properties.kab_kota) === kabNorm) {
@@ -249,7 +254,14 @@
     if (!bounds.length) return null;
     let combined = bounds[0];
     for (const b of bounds.slice(1)) combined = combined.extend(b);
-    return combined.getCenter();
+    return combined;
+  }
+
+  /** Ukuran (lebar/tinggi) sebuah LatLngBounds di layar saat ini, dlm piksel. */
+  function pxSizeOfBounds(bounds) {
+    const nw = state.map.latLngToLayerPoint(bounds.getNorthWest());
+    const se = state.map.latLngToLayerPoint(bounds.getSouthEast());
+    return { width: Math.abs(se.x - nw.x), height: Math.abs(se.y - nw.y) };
   }
 
   function restyleLayer() {
@@ -273,10 +285,15 @@
     rebuildLabels();
   }
 
-  /** Tooltip permanen (tanpa perlu hover): satu label per kabupaten kalau
-   * belum ada filter kabupaten dipilih (agregat semua kecamatan di
-   * kabupaten itu), atau satu label per kecamatan (hanya di kabupaten
-   * terpilih) kalau filter kabupaten sedang aktif. */
+  /** Tooltip permanen (tanpa perlu hover):
+   * - Belum ada filter kabupaten: satu label per KABUPATEN (agregat semua
+   *   kecamatan di dalamnya), ditempatkan DI DALAM wilayah kabupaten itu,
+   *   lebar tooltip dibatasi kira-kira sesuai lebar kabupaten di layar.
+   * - Filter kabupaten aktif (mis. Mataram): satu label per KECAMATAN di
+   *   kabupaten itu, tapi ditempatkan DI LUAR wilayah kabupaten (melingkar
+   *   di sekitarnya) dgn garis penghubung tipis ke titik tengah kecamatan
+   *   aslinya — supaya kecamatan yang kecil/berdekatan tidak membuat
+   *   tooltip-nya saling menumpuk di dalam area yang sempit. */
   function rebuildLabels() {
     if (!state.map || !state.labelLayer) return;
     state.labelLayer.clearLayers();
@@ -289,31 +306,73 @@
         let schools = state.byKabOnly.get(kabNorm) || [];
         if (state.selectedJenis) schools = schools.filter((s) => s.jenis === state.selectedJenis);
         const stats = computeStats(schools, state.indicatorKey);
-        const centroid = centroidOfKab(kabNorm);
-        if (!centroid) continue;
-        anchors.push({ latlng: centroid, html: labelTooltipHtml(kab, stats) });
+        const kabBounds = boundsOfKab(kabNorm);
+        if (!kabBounds) continue;
+        const centroid = kabBounds.getCenter();
+        const px = pxSizeOfBounds(kabBounds);
+        const maxWidthPx = Math.max(70, Math.min(150, px.width * 0.85));
+        anchors.push({
+          trueLatLng: centroid,
+          labelLatLng: centroid,
+          hasLine: false,
+          html: labelTooltipHtml(kab, stats, maxWidthPx),
+        });
       }
     } else {
       const selectedNorm = normKabKota(state.selectedKab);
+      const kecItems = [];
       state.geoLayer.eachLayer((layer) => {
-        const props = layer.feature.properties;
-        if (normKabKota(props.kab_kota) !== selectedNorm) return;
-        let schools = state.bySchoolKey.get(schoolKey(props.kab_kota, props.kecamatan)) || [];
-        if (state.selectedJenis) schools = schools.filter((s) => s.jenis === state.selectedJenis);
-        const stats = computeStats(schools, state.indicatorKey);
-        anchors.push({ latlng: centroidOfLayer(layer), html: labelTooltipHtml(props.kecamatan, stats) });
+        if (normKabKota(layer.feature.properties.kab_kota) === selectedNorm) kecItems.push(layer);
       });
+      if (kecItems.length) {
+        let kabBounds = kecItems[0].getBounds();
+        for (const layer of kecItems.slice(1)) kabBounds = kabBounds.extend(layer.getBounds());
+        const centerPx = state.map.latLngToLayerPoint(kabBounds.getCenter());
+        const nwPx = state.map.latLngToLayerPoint(kabBounds.getNorthWest());
+        const sePx = state.map.latLngToLayerPoint(kabBounds.getSouthEast());
+        const halfDiag = Math.hypot(sePx.x - nwPx.x, sePx.y - nwPx.y) / 2;
+        const radiusPx = Math.max(halfDiag * 1.15 + 46, 70);
+
+        for (const layer of kecItems) {
+          const props = layer.feature.properties;
+          let schools = state.bySchoolKey.get(schoolKey(props.kab_kota, props.kecamatan)) || [];
+          if (state.selectedJenis) schools = schools.filter((s) => s.jenis === state.selectedJenis);
+          const stats = computeStats(schools, state.indicatorKey);
+          const trueCentroid = centroidOfLayer(layer);
+          const truePx = state.map.latLngToLayerPoint(trueCentroid);
+          const angle = Math.atan2(truePx.y - centerPx.y, truePx.x - centerPx.x) || 0;
+          const labelPx = centerPx.add(L.point(radiusPx * Math.cos(angle), radiusPx * Math.sin(angle)));
+          anchors.push({
+            trueLatLng: trueCentroid,
+            labelLatLng: state.map.layerPointToLatLng(labelPx),
+            hasLine: true,
+            html: labelTooltipHtml(props.kecamatan, stats),
+          });
+        }
+      }
     }
 
     for (const a of anchors) {
-      const marker = L.marker(a.latlng, {
+      const marker = L.marker(a.labelLatLng, {
         icon: L.divIcon({ className: "peta-label-anchor", iconSize: [0, 0] }),
         interactive: false,
         keyboard: false,
       });
       marker.bindTooltip(a.html, { permanent: true, direction: "center", className: "peta-popup-tooltip" });
       marker.addTo(state.labelLayer);
-      state.labelMarkers.push({ marker, anchorLatLng: a.latlng });
+
+      let line = null;
+      if (a.hasLine) {
+        line = L.polyline([a.trueLatLng, a.labelLatLng], {
+          color: "#8a8779",
+          weight: 1,
+          dashArray: "2,3",
+          interactive: false,
+          className: "peta-leader-line",
+        }).addTo(state.labelLayer);
+      }
+
+      state.labelMarkers.push({ marker, anchorLatLng: a.labelLatLng, trueLatLng: a.trueLatLng, line });
     }
 
     // Tunggu 2 frame supaya browser selesai layout tooltip (perlu ukuran
@@ -329,12 +388,14 @@
     if (!map || state.labelMarkers.length < 2) return;
 
     const items = [];
-    for (const { marker, anchorLatLng } of state.labelMarkers) {
+    for (const { marker, anchorLatLng, trueLatLng, line } of state.labelMarkers) {
       const tooltip = marker.getTooltip();
       const elm = tooltip && tooltip.getElement();
       if (!elm) continue;
       items.push({
         marker,
+        line,
+        trueLatLng,
         anchorPx: map.latLngToLayerPoint(anchorLatLng),
         w: elm.offsetWidth,
         h: elm.offsetHeight,
@@ -384,7 +445,9 @@
     for (const it of items) {
       if (it.dx !== 0 || it.dy !== 0) {
         const newPoint = it.anchorPx.add(L.point(it.dx, it.dy));
-        it.marker.setLatLng(map.layerPointToLatLng(newPoint));
+        const newLatLng = map.layerPointToLatLng(newPoint);
+        it.marker.setLatLng(newLatLng);
+        if (it.line) it.line.setLatLngs([it.trueLatLng, newLatLng]);
       }
     }
   }

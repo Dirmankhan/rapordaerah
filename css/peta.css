@@ -49,17 +49,18 @@
 .leaflet-popup-content,
 .peta-popup-tooltip {
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-  font-size: 0.78rem;
+  font-size: 0.66rem;
+  line-height: 1.25;
 }
 .peta-popup h4 {
-  margin: 0 0 4px;
-  font-size: 0.85rem;
+  margin: 0 0 2px;
+  font-size: 0.72rem;
 }
 .peta-popup dl {
   margin: 0;
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 1px 8px;
+  gap: 0 6px;
 }
 .peta-popup dt {
   color: #52514e;
@@ -77,10 +78,17 @@
   border: none;
 }
 
-/* Tooltip permanen (bukan Leaflet popup): sedikit lebih ringkas & selalu
-   di atas polygon lain supaya tetap terbaca, tapi tidak menghalangi
-   drag/klik di peta. */
+/* Tooltip permanen (bukan Leaflet popup): ringkas supaya muat di wilayah
+   kecil & tidak mudah tumpang tindih, selalu di atas polygon lain, tapi
+   tidak menghalangi drag/klik di peta. */
 .peta-popup-tooltip {
-  padding: 5px 8px;
+  padding: 3px 6px;
   z-index: 650;
+  white-space: normal;
+}
+
+/* Garis penghubung dari label yang ditempatkan di luar wilayah (mode
+   kecamatan) ke titik tengah kecamatan aslinya. */
+.peta-leader-line {
+  pointer-events: none;
 }
