@@ -9,8 +9,11 @@
   const state = {
     schools: [],
     bySchoolKey: new Map(), // "kabkota norm|kecamatan norm" -> [school,...]
+    byKabOnly: new Map(), // kabkota norm -> [school,...] (semua kecamatan digabung)
     geoLayer: null,
     map: null,
+    labelLayer: null, // layer permanent tooltip (per kabupaten / per kecamatan)
+    labelMarkers: [], // [{marker, anchorLatLng}] utk resolveLabelOverlaps()
     indicatorKey: CFG.INDICATORS[0].key,
     kabupatenList: [], // nama asli dari data sekolah
     jenisList: [], // nama asli Jenis Satuan Pendidikan dari data sekolah
@@ -154,23 +157,36 @@
     return GRADIENT_STOPS[GRADIENT_STOPS.length - 1][1];
   }
 
-  /** Hitung statistik label capaian utk 1 indikator dari sekumpulan sekolah. */
+  /** Hitung statistik label capaian utk 1 indikator dari sekumpulan sekolah.
+   * `total`/`baik`/`kurang`/`pctBaik`/`pctKurang` dipakai utk skor warna
+   * peta (spt semula, tidak menghitung "Tidak Tersedia"/data kosong).
+   * `totalSekolah`/`sedang`/`tidakTersedia` ditambahkan utk tooltip: semua
+   * sekolah dihitung, sekolah tanpa label capaian dianggap "Tidak Tersedia". */
   function computeStats(schools, indicatorKey) {
     let total = 0;
     let baik = 0;
+    let sedang = 0;
     let kurang = 0;
+    let tidakTersedia = 0;
     for (const s of schools) {
       const v = s.indikator[indicatorKey];
-      if (!v || !v.label) continue;
+      if (!v || !v.label) {
+        tidakTersedia++;
+        continue;
+      }
       const cat = categorize(v.label);
-      if (cat.rank === 3) continue; // "Tidak Tersedia" — tidak dihitung
+      if (cat.rank === 3) {
+        tidakTersedia++;
+        continue; // "Tidak Tersedia" — tidak dihitung ke skor warna
+      }
       total++;
       if (cat.rank === 0) baik++;
+      else if (cat.rank === 1) sedang++;
       else if (cat.rank === 2) kurang++;
     }
     const pctBaik = total ? (100 * baik) / total : null;
     const pctKurang = total ? (100 * kurang) / total : null;
-    return { total, baik, kurang, pctBaik, pctKurang };
+    return { total, baik, sedang, kurang, tidakTersedia, pctBaik, pctKurang, totalSekolah: schools.length };
   }
 
   function styleForStats(stats) {
@@ -186,22 +202,54 @@
   // Peta
   // -----------------------------------------------------------------------
 
-  function popupHtml(props, stats) {
-    const rows = [
-      ["Kabupaten/Kota", props.kab_kota],
-      ["Satdik dinilai", stats.total.toLocaleString("id-ID")],
+  /** Baris isi tooltip: jumlah sekolah + rincian Baik/Sedang/Kurang/Tidak
+   * Tersedia (jumlah & persentase dari jumlah sekolah). */
+  function statsRows(stats) {
+    const denom = stats.totalSekolah;
+    const pct = (n) => (denom ? ((100 * n) / denom).toFixed(1) + "%" : "-");
+    return [
+      ["Jumlah sekolah", stats.totalSekolah.toLocaleString("id-ID")],
+      ["Baik", stats.baik.toLocaleString("id-ID") + " (" + pct(stats.baik) + ")"],
+      ["Sedang", stats.sedang.toLocaleString("id-ID") + " (" + pct(stats.sedang) + ")"],
+      ["Kurang", stats.kurang.toLocaleString("id-ID") + " (" + pct(stats.kurang) + ")"],
+      ["Tidak tersedia", stats.tidakTersedia.toLocaleString("id-ID") + " (" + pct(stats.tidakTersedia) + ")"],
     ];
-    if (stats.total > 0) {
-      rows.push(["% Baik/Tinggi", stats.pctBaik.toFixed(1) + "%"]);
-      rows.push(["% Kurang/Rendah", stats.pctKurang.toFixed(1) + "%"]);
-    }
+  }
+
+  function labelTooltipHtml(title, stats) {
     return (
       "<div class='peta-popup'><h4>" +
-      escapeHtml(props.kecamatan) +
+      escapeHtml(title) +
       "</h4><dl>" +
-      rows.map(([k, v]) => "<dt>" + escapeHtml(k) + "</dt><dd>" + escapeHtml(v) + "</dd>").join("") +
+      statsRows(stats)
+        .map(([k, v]) => "<dt>" + escapeHtml(k) + "</dt><dd>" + escapeHtml(v) + "</dd>")
+        .join("") +
       "</dl></div>"
     );
+  }
+
+  function centroidOfLayer(layer) {
+    if (typeof layer.getCenter === "function") {
+      try {
+        return layer.getCenter();
+      } catch (err) {
+        // beberapa geometri (mis. multipart) bisa gagal di getCenter(); pakai bounds.
+      }
+    }
+    return layer.getBounds().getCenter();
+  }
+
+  function centroidOfKab(kabNorm) {
+    const bounds = [];
+    state.geoLayer.eachLayer((layer) => {
+      if (normKabKota(layer.feature.properties.kab_kota) === kabNorm) {
+        bounds.push(layer.getBounds());
+      }
+    });
+    if (!bounds.length) return null;
+    let combined = bounds[0];
+    for (const b of bounds.slice(1)) combined = combined.extend(b);
+    return combined.getCenter();
   }
 
   function restyleLayer() {
@@ -221,11 +269,124 @@
         style.fillOpacity = Math.min(style.fillOpacity, 0.35);
       }
       layer.setStyle(style);
-      layer.unbindTooltip();
-      if (inSelectedKab) {
-        layer.bindTooltip(popupHtml(props, stats), { sticky: true, className: "peta-popup-tooltip" });
-      }
     });
+    rebuildLabels();
+  }
+
+  /** Tooltip permanen (tanpa perlu hover): satu label per kabupaten kalau
+   * belum ada filter kabupaten dipilih (agregat semua kecamatan di
+   * kabupaten itu), atau satu label per kecamatan (hanya di kabupaten
+   * terpilih) kalau filter kabupaten sedang aktif. */
+  function rebuildLabels() {
+    if (!state.map || !state.labelLayer) return;
+    state.labelLayer.clearLayers();
+    state.labelMarkers = [];
+
+    const anchors = [];
+    if (!state.selectedKab) {
+      for (const kab of state.kabupatenList) {
+        const kabNorm = normKabKota(kab);
+        let schools = state.byKabOnly.get(kabNorm) || [];
+        if (state.selectedJenis) schools = schools.filter((s) => s.jenis === state.selectedJenis);
+        const stats = computeStats(schools, state.indicatorKey);
+        const centroid = centroidOfKab(kabNorm);
+        if (!centroid) continue;
+        anchors.push({ latlng: centroid, html: labelTooltipHtml(kab, stats) });
+      }
+    } else {
+      const selectedNorm = normKabKota(state.selectedKab);
+      state.geoLayer.eachLayer((layer) => {
+        const props = layer.feature.properties;
+        if (normKabKota(props.kab_kota) !== selectedNorm) return;
+        let schools = state.bySchoolKey.get(schoolKey(props.kab_kota, props.kecamatan)) || [];
+        if (state.selectedJenis) schools = schools.filter((s) => s.jenis === state.selectedJenis);
+        const stats = computeStats(schools, state.indicatorKey);
+        anchors.push({ latlng: centroidOfLayer(layer), html: labelTooltipHtml(props.kecamatan, stats) });
+      });
+    }
+
+    for (const a of anchors) {
+      const marker = L.marker(a.latlng, {
+        icon: L.divIcon({ className: "peta-label-anchor", iconSize: [0, 0] }),
+        interactive: false,
+        keyboard: false,
+      });
+      marker.bindTooltip(a.html, { permanent: true, direction: "center", className: "peta-popup-tooltip" });
+      marker.addTo(state.labelLayer);
+      state.labelMarkers.push({ marker, anchorLatLng: a.latlng });
+    }
+
+    // Tunggu 2 frame supaya browser selesai layout tooltip (perlu ukuran
+    // sebenarnya/offsetWidth-Height) sebelum menghitung tumpang tindih.
+    requestAnimationFrame(() => requestAnimationFrame(resolveLabelOverlaps));
+  }
+
+  /** Geser posisi tooltip yang saling tumpang tindih menjauh satu sama
+   * lain (simulasi tolak-menolak AABB sederhana di ruang piksel), supaya
+   * semua tooltip permanen tetap terbaca meski berdekatan di peta. */
+  function resolveLabelOverlaps() {
+    const map = state.map;
+    if (!map || state.labelMarkers.length < 2) return;
+
+    const items = [];
+    for (const { marker, anchorLatLng } of state.labelMarkers) {
+      const tooltip = marker.getTooltip();
+      const elm = tooltip && tooltip.getElement();
+      if (!elm) continue;
+      items.push({
+        marker,
+        anchorPx: map.latLngToLayerPoint(anchorLatLng),
+        w: elm.offsetWidth,
+        h: elm.offsetHeight,
+        dx: 0,
+        dy: 0,
+      });
+    }
+    if (items.length < 2) return;
+
+    const PAD = 4;
+    const MAX_DISPLACEMENT = 120;
+    for (let iter = 0; iter < 60; iter++) {
+      let moved = false;
+      for (let i = 0; i < items.length; i++) {
+        for (let j = i + 1; j < items.length; j++) {
+          const A = items[i];
+          const B = items[j];
+          const ax = A.anchorPx.x + A.dx;
+          const ay = A.anchorPx.y + A.dy;
+          const bx = B.anchorPx.x + B.dx;
+          const by = B.anchorPx.y + B.dy;
+          const overlapX = (A.w + B.w) / 2 + PAD - Math.abs(ax - bx);
+          const overlapY = (A.h + B.h) / 2 + PAD - Math.abs(ay - by);
+          if (overlapX > 0 && overlapY > 0) {
+            moved = true;
+            if (overlapX < overlapY) {
+              const dir = ax <= bx ? -1 : 1;
+              const push = (overlapX / 2) * dir;
+              A.dx += push;
+              B.dx -= push;
+            } else {
+              const dir = ay <= by ? -1 : 1;
+              const push = (overlapY / 2) * dir;
+              A.dy += push;
+              B.dy -= push;
+            }
+          }
+        }
+      }
+      for (const it of items) {
+        it.dx = Math.max(-MAX_DISPLACEMENT, Math.min(MAX_DISPLACEMENT, it.dx));
+        it.dy = Math.max(-MAX_DISPLACEMENT, Math.min(MAX_DISPLACEMENT, it.dy));
+      }
+      if (!moved) break;
+    }
+
+    for (const it of items) {
+      if (it.dx !== 0 || it.dy !== 0) {
+        const newPoint = it.anchorPx.add(L.point(it.dx, it.dy));
+        it.marker.setLatLng(map.layerPointToLatLng(newPoint));
+      }
+    }
   }
 
   // -----------------------------------------------------------------------
@@ -322,6 +483,9 @@
         const key = schoolKey(kabkota, kecamatan);
         if (!state.bySchoolKey.has(key)) state.bySchoolKey.set(key, []);
         state.bySchoolKey.get(key).push(s);
+        const kabOnlyKey = normKabKota(kabkota);
+        if (!state.byKabOnly.has(kabOnlyKey)) state.byKabOnly.set(kabOnlyKey, []);
+        state.byKabOnly.get(kabOnlyKey).push(s);
       }
       state.kabupatenList = Array.from(kabSet).sort((a, b) => a.localeCompare(b, "id"));
       state.jenisList = Array.from(jenisSet).sort((a, b) => a.localeCompare(b, "id"));
@@ -373,9 +537,15 @@
       state.geoLayer = L.geoJSON(geojson, {
         style: () => ({ color: "#ffffff", weight: 1, fillOpacity: 0.6 }),
       }).addTo(state.map);
+      state.labelLayer = L.layerGroup().addTo(state.map);
+
+      // Peta perlu view (center/zoom) valid dulu sebelum menghitung posisi
+      // piksel label (rebuildLabels/resolveLabelOverlaps), makanya fitBounds
+      // dipanggil sebelum restyleLayer().
+      state.map.fitBounds(state.geoLayer.getBounds(), { padding: [12, 12] });
+      state.map.on("zoomend moveend resize", resolveLabelOverlaps);
 
       restyleLayer();
-      state.map.fitBounds(state.geoLayer.getBounds(), { padding: [12, 12] });
 
       setStatus("");
     } catch (err) {

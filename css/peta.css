@@ -46,19 +46,20 @@
   border: 1px solid var(--gridline);
 }
 
-.leaflet-popup-content {
+.leaflet-popup-content,
+.peta-popup-tooltip {
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-  font-size: 0.85rem;
+  font-size: 0.78rem;
 }
 .peta-popup h4 {
-  margin: 0 0 6px;
-  font-size: 0.95rem;
+  margin: 0 0 4px;
+  font-size: 0.85rem;
 }
 .peta-popup dl {
   margin: 0;
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 2px 8px;
+  gap: 1px 8px;
 }
 .peta-popup dt {
   color: #52514e;
@@ -67,4 +68,19 @@
   margin: 0;
   font-weight: 600;
   text-align: right;
+}
+
+/* Marker "jangkar" tak terlihat tempat tooltip permanen ditempelkan —
+   hilangkan kotak putih default divIcon Leaflet. */
+.peta-label-anchor {
+  background: transparent;
+  border: none;
+}
+
+/* Tooltip permanen (bukan Leaflet popup): sedikit lebih ringkas & selalu
+   di atas polygon lain supaya tetap terbaca, tapi tidak menghalangi
+   drag/klik di peta. */
+.peta-popup-tooltip {
+  padding: 5px 8px;
+  z-index: 650;
 }
