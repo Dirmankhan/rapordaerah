@@ -60,6 +60,43 @@
     return normKabKota(kabkota) + "|" + normKecamatan(kecamatan);
   }
 
+  function findCol(header, regex) {
+    for (let i = 0; i < header.length; i++) {
+      if (regex.test(String(header[i] || "").toLowerCase())) return i;
+    }
+    return -1;
+  }
+
+  /** Baca sheet referensi NPSN (data Dapodik) dan bangun peta
+   * npsn -> {kabkota, kecamatan} memakai nama acuan resminya, dicoba
+   * dari nama tab pertama di CFG.REFERENSI_SHEET_NAMES yang berhasil &
+   * punya kolom "npsn". */
+  async function loadReferensiByNpsn() {
+    for (const sheetName of CFG.REFERENSI_SHEET_NAMES) {
+      let raw;
+      try {
+        raw = await Gviz.fetchSheetRaw(CFG.CONFIG_SHEET_ID, sheetName);
+      } catch (err) {
+        continue;
+      }
+      if (raw.length < 2) continue;
+      const header = raw[0];
+      const idxNpsn = findCol(header, /^npsn$/);
+      const idxKec = findCol(header, /^kecamatan$/);
+      const idxKab = findCol(header, /^kabupaten$/);
+      if (idxNpsn === -1 || idxKec === -1 || idxKab === -1) continue;
+
+      const map = new Map();
+      for (const row of raw.slice(1)) {
+        const npsn = String(row[idxNpsn] ?? "").trim();
+        if (!npsn) continue;
+        map.set(npsn, { kabkota: row[idxKab] ?? "", kecamatan: row[idxKec] ?? "" });
+      }
+      return map;
+    }
+    return new Map();
+  }
+
   // -----------------------------------------------------------------------
   // Warna gradasi merah -> kuning -> hijau
   // -----------------------------------------------------------------------
@@ -231,16 +268,32 @@
       const result = await window.SchoolData.loadAll((msg) => setStatus(msg, false));
       state.schools = result.schools;
 
+      setStatus("Membaca sheet referensi NPSN...", false);
+      const referensiByNpsn = await loadReferensiByNpsn();
+
       setStatus("Menggabungkan data...", false);
       const kabSet = new Set();
+      let fromReferensi = 0;
+      let fromRapor = 0;
       for (const s of state.schools) {
-        if (!s.kabkota) continue;
-        kabSet.add(s.kabkota);
-        const key = schoolKey(s.kabkota, s.kecamatan);
+        const ref = referensiByNpsn.get(String(s.npsn ?? "").trim());
+        const kabkota = ref ? ref.kabkota : s.kabkota;
+        const kecamatan = ref ? ref.kecamatan : s.kecamatan;
+        if (ref) fromReferensi++;
+        else fromRapor++;
+        if (!kabkota) continue;
+        kabSet.add(kabkota);
+        const key = schoolKey(kabkota, kecamatan);
         if (!state.bySchoolKey.has(key)) state.bySchoolKey.set(key, []);
         state.bySchoolKey.get(key).push(s);
       }
       state.kabupatenList = Array.from(kabSet).sort((a, b) => a.localeCompare(b, "id"));
+
+      const referensiLine =
+        (fromReferensi > 0
+          ? fromReferensi.toLocaleString("id-ID") + " satdik pakai wilayah dari sheet referensi (NPSN)"
+          : "Sheet referensi NPSN tidak ditemukan/kosong") +
+        (fromRapor > 0 ? ", " + fromRapor.toLocaleString("id-ID") + " fallback ke data rapor." : ".");
 
       // Deteksi kecamatan di GeoJSON yang tidak ketemu padanannya di data sekolah.
       const unmatched = [];
@@ -254,12 +307,13 @@
       const p = el("peta-unmatched");
       p.hidden = false;
       if (unmatched.length === 0) {
-        p.textContent = "Semua " + geojson.features.length + " kecamatan di peta cocok dengan data sekolah.";
+        p.textContent = referensiLine + " Semua " + geojson.features.length + " kecamatan di peta cocok dengan data sekolah.";
       } else {
         const shown = unmatched.slice(0, 15);
         const more = unmatched.length > shown.length ? " dan " + (unmatched.length - shown.length) + " lainnya" : "";
         p.innerHTML =
-          "<strong>" +
+          escapeHtml(referensiLine) +
+          " <strong>" +
           matchedCount +
           " dari " +
           geojson.features.length +

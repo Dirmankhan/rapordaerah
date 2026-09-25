@@ -131,12 +131,21 @@ kecamatan yang benar-benar berimbang.
   [Alf-Anas/batas-administrasi-indonesia](https://github.com/Alf-Anas/batas-administrasi-indonesia)
   (disederhanakan dengan algoritma Douglas-Peucker dari ~550MB shapefile
   nasional menjadi ±750KB khusus Provinsi NTB, 117 kecamatan/10
-  kabupaten-kota). Nama kabupaten/kecamatan di berkas ini dicocokkan
-  otomatis (tidak peka huruf besar/kecil, dengan/tanpa awalan
-  "Kabupaten"/"Kota") ke nama di data sekolah; kecamatan yang tidak
-  ketemu padanannya akan terdaftar di halaman (bukan gagal diam-diam) —
-  biasanya karena beda ejaan, dan bisa diperbaiki dengan menyunting
-  `data/ntb_kecamatan.geojson` atau data sekolahnya.
+  kabupaten-kota).
+- **Wilayah tiap satdik dicari lewat NPSN di sheet referensi** (tab
+  `referensi` atau `Copy of Query result` di `CONFIG_SHEET_ID` — data
+  Dapodik dengan kolom `npsn`, `kecamatan`, `kabupaten`, dst.), bukan dari
+  kolom Kecamatan/Kabupaten di data rapor — supaya penulisan namanya
+  konsisten dan lebih mudah dicocokkan ke batas wilayah GeoJSON. Kalau
+  NPSN suatu satdik tidak ketemu di sheet referensi, otomatis fallback ke
+  kolom Kecamatan/Kabupaten dari data rapor.
+- Nama kabupaten/kecamatan (baik dari sheet referensi maupun fallback-nya)
+  dicocokkan otomatis ke GeoJSON (tidak peka huruf besar/kecil, dengan/
+  tanpa awalan "Kabupaten"/"Kota"/"Kec."). Halaman selalu menampilkan
+  ringkasan: berapa satdik yang pakai sheet referensi vs fallback, dan
+  berapa kecamatan di peta yang cocok/tidak cocok (bukan gagal diam-diam)
+  — kecamatan yang tidak cocok tampil abu-abu dan namanya didaftar supaya
+  mudah ditelusuri.
 
 ## Struktur berkas
 

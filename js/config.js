@@ -109,4 +109,14 @@ window.DASHBOARD_CONFIG = {
     "RAPOR-KAB-BIMA-DATA-2025": "1BbeJss6ihO6c5Pqtdnin20ZP2ETOQS4A-OmFqMlmTYY",
     "RAPOR-KOTA-BIMA-DATA-2025": "1sjUTXBINeuj9qAMbUzX6xHxBY10Y5AvZ14RtOL5iMd0",
   },
+
+  // --- Halaman Peta Sebaran Kecamatan (peta.html) ------------------------
+  //
+  // Sheet referensi NPSN (data Dapodik: npsn, kecamatan, kabupaten, dst.)
+  // di CONFIG_SHEET_ID, dipakai supaya nama kecamatan/kabupaten yang
+  // dicocokkan ke batas wilayah GeoJSON berasal dari data acuan resmi
+  // per-NPSN, bukan dari kolom Kecamatan/Kabupaten di data rapor (yang
+  // penulisannya kadang tidak konsisten). Dicoba berurutan — dipakai yang
+  // pertama ditemukan & punya kolom "npsn".
+  REFERENSI_SHEET_NAMES: ["referensi", "Copy of Query result"],
 };
