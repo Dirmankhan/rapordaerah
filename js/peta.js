@@ -50,8 +50,14 @@
     return n;
   }
 
+  /** Samakan penulisan nama Kecamatan: buang awalan "Kec./Kecamatan" bila
+   * ada di data sekolah, supaya cocok dgn GeoJSON yang tanpa awalan. */
+  function normKecamatan(name) {
+    return normText(name).replace(/^kec\.?(amatan)?\s+/, "");
+  }
+
   function schoolKey(kabkota, kecamatan) {
-    return normKabKota(kabkota) + "|" + normText(kecamatan);
+    return normKabKota(kabkota) + "|" + normKecamatan(kecamatan);
   }
 
   // -----------------------------------------------------------------------
@@ -244,12 +250,25 @@
           unmatched.push(feat.properties.kecamatan + " (" + feat.properties.kab_kota + ")");
         }
       }
-      if (unmatched.length) {
-        const p = el("peta-unmatched");
-        p.hidden = false;
-        p.textContent =
-          unmatched.length + " kecamatan di peta belum cocok dengan data sekolah (nama mungkin berbeda ejaan): " +
-          unmatched.join(", ");
+      const matchedCount = geojson.features.length - unmatched.length;
+      const p = el("peta-unmatched");
+      p.hidden = false;
+      if (unmatched.length === 0) {
+        p.textContent = "Semua " + geojson.features.length + " kecamatan di peta cocok dengan data sekolah.";
+      } else {
+        const shown = unmatched.slice(0, 15);
+        const more = unmatched.length > shown.length ? " dan " + (unmatched.length - shown.length) + " lainnya" : "";
+        p.innerHTML =
+          "<strong>" +
+          matchedCount +
+          " dari " +
+          geojson.features.length +
+          " kecamatan di peta cocok dengan data sekolah.</strong> " +
+          unmatched.length +
+          " belum cocok (nama mungkin berbeda ejaan), sehingga tampil abu-abu di peta: " +
+          escapeHtml(shown.join(", ")) +
+          escapeHtml(more) +
+          ".";
       }
 
       renderFilters();
