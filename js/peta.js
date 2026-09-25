@@ -206,26 +206,6 @@
     });
   }
 
-  function fitToSelectedKab() {
-    if (!state.geoLayer) return;
-    if (!state.selectedKab) {
-      state.map.fitBounds(state.geoLayer.getBounds(), { padding: [12, 12] });
-      return;
-    }
-    const norm = normKabKota(state.selectedKab);
-    const bounds = [];
-    state.geoLayer.eachLayer((layer) => {
-      if (normKabKota(layer.feature.properties.kab_kota) === norm) {
-        bounds.push(layer.getBounds());
-      }
-    });
-    if (bounds.length) {
-      let combined = bounds[0];
-      for (const b of bounds.slice(1)) combined = combined.extend(b);
-      state.map.fitBounds(combined, { padding: [12, 12] });
-    }
-  }
-
   // -----------------------------------------------------------------------
   // Filter UI
   // -----------------------------------------------------------------------
@@ -241,7 +221,6 @@
     kabSelect.addEventListener("change", () => {
       state.selectedKab = kabSelect.value;
       restyleLayer();
-      fitToSelectedKab();
     });
 
     const indSelect = el("peta-indikator-select");
