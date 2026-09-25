@@ -2,7 +2,7 @@
   "use strict";
 
   const CFG = window.DASHBOARD_CONFIG;
-  const { categorize, escapeHtml } = window.Shared;
+  const { categorize, escapeHtml, isSMK } = window.Shared;
 
   const el = (id) => document.getElementById(id);
 
@@ -13,7 +13,9 @@
     map: null,
     indicatorKey: CFG.INDICATORS[0].key,
     kabupatenList: [], // nama asli dari data sekolah
+    jenisList: [], // nama asli Jenis Satuan Pendidikan dari data sekolah
     selectedKab: "",
+    selectedJenis: "",
   };
 
   function setStatus(msg, isError) {
@@ -195,7 +197,10 @@
     const selectedKabNorm = state.selectedKab ? normKabKota(state.selectedKab) : null;
     state.geoLayer.eachLayer((layer) => {
       const props = layer.feature.properties;
-      const schools = state.bySchoolKey.get(schoolKey(props.kab_kota, props.kecamatan)) || [];
+      let schools = state.bySchoolKey.get(schoolKey(props.kab_kota, props.kecamatan)) || [];
+      if (state.selectedJenis) {
+        schools = schools.filter((s) => s.jenis === state.selectedJenis);
+      }
       const stats = computeStats(schools, state.indicatorKey);
       const style = styleForStats(stats);
       const inSelectedKab = !selectedKabNorm || normKabKota(props.kab_kota) === selectedKabNorm;
@@ -212,6 +217,28 @@
   // Filter UI
   // -----------------------------------------------------------------------
 
+  /** Bangun ulang opsi Indikator Prioritas: indikator `smkOnly` (A.4, D.17)
+   * hanya dimunculkan jika filter Jenis Satuan Pendidikan yang sedang
+   * dipilih adalah jenjang SMK. Mempertahankan pilihan yang masih valid,
+   * jatuh ke indikator pertama yang tersedia jika tidak. */
+  function renderIndicatorOptions() {
+    const indSelect = el("peta-indikator-select");
+    const prevValue = indSelect.value || state.indicatorKey;
+    const showSmkOnly = isSMK(state.selectedJenis);
+    const available = CFG.INDICATORS.filter((ind) => !ind.smkOnly || showSmkOnly);
+
+    indSelect.innerHTML = "";
+    for (const ind of available) {
+      const opt = document.createElement("option");
+      opt.value = ind.key;
+      opt.textContent = ind.label;
+      indSelect.appendChild(opt);
+    }
+    const stillValid = available.some((ind) => ind.key === prevValue);
+    state.indicatorKey = stillValid ? prevValue : available[0].key;
+    indSelect.value = state.indicatorKey;
+  }
+
   function renderFilters() {
     const kabSelect = el("peta-kab-select");
     for (const kab of state.kabupatenList) {
@@ -225,14 +252,21 @@
       restyleLayer();
     });
 
-    const indSelect = el("peta-indikator-select");
-    for (const ind of CFG.INDICATORS) {
+    const jenisSelect = el("peta-jenis-select");
+    for (const jenis of state.jenisList) {
       const opt = document.createElement("option");
-      opt.value = ind.key;
-      opt.textContent = ind.label;
-      indSelect.appendChild(opt);
+      opt.value = jenis;
+      opt.textContent = jenis;
+      jenisSelect.appendChild(opt);
     }
-    indSelect.value = state.indicatorKey;
+    jenisSelect.addEventListener("change", () => {
+      state.selectedJenis = jenisSelect.value;
+      renderIndicatorOptions();
+      restyleLayer();
+    });
+
+    renderIndicatorOptions();
+    const indSelect = el("peta-indikator-select");
     indSelect.addEventListener("change", () => {
       state.indicatorKey = indSelect.value;
       restyleLayer();
@@ -258,6 +292,7 @@
 
       setStatus("Menggabungkan data...", false);
       const kabSet = new Set();
+      const jenisSet = new Set();
       let fromReferensi = 0;
       let fromRapor = 0;
       for (const s of state.schools) {
@@ -266,6 +301,7 @@
         const kecamatan = ref ? ref.kecamatan : s.kecamatan;
         if (ref) fromReferensi++;
         else fromRapor++;
+        if (s.jenis) jenisSet.add(s.jenis);
         if (!kabkota) continue;
         kabSet.add(kabkota);
         const key = schoolKey(kabkota, kecamatan);
@@ -273,6 +309,7 @@
         state.bySchoolKey.get(key).push(s);
       }
       state.kabupatenList = Array.from(kabSet).sort((a, b) => a.localeCompare(b, "id"));
+      state.jenisList = Array.from(jenisSet).sort((a, b) => a.localeCompare(b, "id"));
 
       const referensiLine =
         (fromReferensi > 0
