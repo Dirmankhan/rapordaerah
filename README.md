@@ -106,17 +106,54 @@ Data tiap kabupaten/kota diambil sekali saat pertama dipilih di dropdown,
 lalu disimpan di memori (tidak diambil ulang saat bolak-balik pilihan dalam
 sesi yang sama).
 
+### Halaman "Peta Sebaran Kecamatan" (`peta.html`)
+
+Peta choropleth (Leaflet + OpenStreetMap) batas kecamatan se-NTB, diwarnai
+gradasi merah→kuning→hijau berdasarkan **(% satdik berlabel Baik/Tinggi) −
+(% satdik berlabel Kurang/Rendah)** untuk indikator prioritas yang dipilih:
+semakin merah kalau porsi Kurang/Rendah dominan (>60% → merah pekat),
+semakin hijau kalau porsi Baik/Tinggi dominan (>60% → hijau pekat).
+Kecamatan tanpa data sama sekali untuk indikator itu diberi pola abu-abu
+("Tidak ada data"), bukan warna netral, supaya tidak tertukar dengan
+kecamatan yang benar-benar berimbang.
+
+- **Filter Kabupaten/Kota**: mempersempit peta (zoom + meredupkan
+  kecamatan di luar kabupaten terpilih) tanpa mengambil data ulang.
+- **Filter Indikator Prioritas**: daftarnya sama dengan `CFG.INDICATORS` di
+  `js/config.js` (indikator yang sama dipakai di halaman utama); mengganti
+  pilihan langsung mewarnai ulang peta tanpa fetch baru, karena data semua
+  indikator sudah diambil sekaligus di awal.
+- Arahkan kursor ke sebuah kecamatan untuk lihat jumlah satdik yang
+  dinilai serta persentase persisnya (angka pastinya selalu ada di
+  tooltip, tidak hanya warna, untuk pengguna buta warna).
+- Batas administrasi kecamatan (`data/ntb_kecamatan.geojson`) adalah data
+  terbuka dari
+  [Alf-Anas/batas-administrasi-indonesia](https://github.com/Alf-Anas/batas-administrasi-indonesia)
+  (disederhanakan dengan algoritma Douglas-Peucker dari ~550MB shapefile
+  nasional menjadi ±750KB khusus Provinsi NTB, 117 kecamatan/10
+  kabupaten-kota). Nama kabupaten/kecamatan di berkas ini dicocokkan
+  otomatis (tidak peka huruf besar/kecil, dengan/tanpa awalan
+  "Kabupaten"/"Kota") ke nama di data sekolah; kecamatan yang tidak
+  ketemu padanannya akan terdaftar di halaman (bukan gagal diam-diam) —
+  biasanya karena beda ejaan, dan bisa diperbaiki dengan menyunting
+  `data/ntb_kecamatan.geojson` atau data sekolahnya.
+
 ## Struktur berkas
 
 ```
 index.html         Halaman Rapor Satuan Pendidikan
 spm.html            Halaman Indikator SPM per Kabupaten/Kota
-css/style.css       Tampilan bersama kedua halaman (mendukung mode gelap otomatis)
+peta.html            Halaman Peta Sebaran Kecamatan
+data/ntb_kecamatan.geojson  Batas kecamatan se-NTB (disederhanakan)
+css/style.css       Tampilan bersama semua halaman (mendukung mode gelap otomatis)
+css/peta.css        Tampilan khusus peta (ukuran peta, legenda, popup)
 js/config.js        ID spreadsheet, daftar indikator, & peta sumber SPM per kabupaten
 js/gviz.js          Pembaca Google Sheets via Google Visualization API
-js/shared.js        Util bersama: warna kategori, badge chip, escape HTML
+js/shared.js        Util bersama: warna kategori, badge chip, escape HTML, deteksi SMK
+js/data.js          Pengambilan & penggabungan data sekolah+indikator (dipakai app.js & peta.js)
 js/app.js           Logika halaman Rapor Satuan Pendidikan
 js/spm.js           Logika halaman Indikator SPM per Kabupaten/Kota
+js/peta.js          Logika halaman Peta Sebaran Kecamatan
 ```
 
 ## Catatan teknis
@@ -126,18 +163,18 @@ js/spm.js           Logika halaman Indikator SPM per Kabupaten/Kota
   dideteksi otomatis dari teks header di baris tepat di atas rentang data
   yang tercatat di sheet konfigurasi — bukan diasumsikan berdasarkan urutan
   kolom tetap. Jika header di sheet sumber berubah kata-katanya, sesuaikan
-  pola regex pemetaan (`detectIndicatorRoles`) di `js/app.js`.
+  pola regex pemetaan (`detectIndicatorRoles`) di `js/data.js`.
 - Karena keterbatasan jaringan pada lingkungan pengembangan ini, pengambilan
   data langsung dari Google Sheets belum bisa diuji end-to-end di sini —
   domain `docs.google.com` diblokir oleh kebijakan proxy sandbox. Mohon uji
   dengan membuka halaman di browser biasa (lingkungan pengguna tidak
   memiliki batasan ini) setelah deploy.
-- `index.html` dan `spm.html` memuat `css/style.css` dan berkas di `js/`
-  dengan query `?v=<angka>` supaya browser tidak menampilkan versi lama
-  dari cache setelah deploy baru. Saat mengubah salah satu berkas
-  tersebut, naikkan angka `?v=` di kedua HTML. Jika dashboard tampak
-  belum menampilkan perubahan terbaru meski deploy sudah sukses, coba
-  hard refresh (Ctrl/Cmd+Shift+R).
+- `index.html`, `spm.html`, dan `peta.html` memuat `css/style.css` dan
+  berkas di `js/` dengan query `?v=<angka>` supaya browser tidak
+  menampilkan versi lama dari cache setelah deploy baru. Saat mengubah
+  salah satu berkas tersebut, naikkan angka `?v=` di ketiga HTML. Jika
+  dashboard tampak belum menampilkan perubahan terbaru meski deploy
+  sudah sukses, coba hard refresh (Ctrl/Cmd+Shift+R).
 - Beberapa judul file sumber di Drive ternyata memiliki **duplikat** (judul
   sama, ID berbeda, folder berbeda) — mis. `RAPOR-KAB-LOMBOK-UTARA-DATA-2025`
   ada 2 salinan. `SPM_SOURCE_BY_TITLE` di `js/config.js` memilih salinan

@@ -50,5 +50,9 @@
     );
   }
 
-  window.Shared = { MUTED, GOOD, ORANGE, CRITICAL, categorize, trendArrow, escapeHtml, chipHtml };
+  function isSMK(jenis) {
+    return /smk/i.test(String(jenis || ""));
+  }
+
+  window.Shared = { MUTED, GOOD, ORANGE, CRITICAL, categorize, trendArrow, escapeHtml, chipHtml, isSMK };
 })();

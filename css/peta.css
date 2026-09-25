@@ -1,0 +1,70 @@
+#peta-map {
+  height: 70vh;
+  min-height: 420px;
+  width: 100%;
+  border-radius: 8px;
+  z-index: 0;
+}
+
+.peta-legend {
+  margin-top: 12px;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+.peta-legend-bar {
+  height: 14px;
+  border-radius: 4px;
+  margin: 6px 0 4px;
+  background: linear-gradient(
+    to right,
+    #a50026 0%,
+    #f46d43 25%,
+    #ffffbf 50%,
+    #66bd63 75%,
+    #006837 100%
+  );
+}
+.peta-legend-labels {
+  display: flex;
+  justify-content: space-between;
+}
+.peta-legend-nodata {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+.peta-swatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  flex: none;
+}
+.peta-swatch-nodata {
+  background: repeating-linear-gradient(45deg, #d8d6cf, #d8d6cf 4px, #eceae3 4px, #eceae3 8px);
+  border: 1px solid var(--gridline);
+}
+
+.leaflet-popup-content {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 0.85rem;
+}
+.peta-popup h4 {
+  margin: 0 0 6px;
+  font-size: 0.95rem;
+}
+.peta-popup dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 8px;
+}
+.peta-popup dt {
+  color: #52514e;
+}
+.peta-popup dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: right;
+}
