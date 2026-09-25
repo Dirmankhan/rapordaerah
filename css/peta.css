@@ -52,12 +52,12 @@
 }
 .peta-popup-tooltip {
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-  font-size: 0.52rem;
-  line-height: 1.2;
+  font-size: 0.4rem;
+  line-height: 1.1;
 }
 .peta-popup h4 {
-  margin: 0 0 2px;
-  font-size: 0.58rem;
+  margin: 0 0 1px;
+  font-size: 0.44rem;
 }
 .peta-popup dl {
   margin: 0;
@@ -85,7 +85,7 @@
    kecil & tidak mudah tumpang tindih, selalu di atas polygon lain, tapi
    tidak menghalangi drag/klik di peta. */
 .peta-popup-tooltip {
-  padding: 2px 5px;
+  padding: 1px 4px;
   z-index: 650;
   white-space: normal;
 }
