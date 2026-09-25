@@ -331,7 +331,9 @@
         const nwPx = state.map.latLngToLayerPoint(kabBounds.getNorthWest());
         const sePx = state.map.latLngToLayerPoint(kabBounds.getSouthEast());
         const halfDiag = Math.hypot(sePx.x - nwPx.x, sePx.y - nwPx.y) / 2;
-        const radiusPx = Math.max(halfDiag * 1.15 + 46, 70);
+        // Cukup lewati sedikit tepi kabupaten (bukan jauh melebar), supaya
+        // label tetap dekat dgn wilayah yang dipilih.
+        const radiusPx = Math.max(halfDiag * 1.02 + 14, 40);
 
         for (const layer of kecItems) {
           const props = layer.feature.properties;
