@@ -385,6 +385,7 @@
       const item = { marker, anchorLatLng: a.labelLatLng, trueLatLng: a.trueLatLng, line, manuallyMoved: false };
       state.labelMarkers.push(item);
       makeTooltipDraggable(item);
+      makeTooltipResizable(item);
     }
 
     // Tunggu 2 frame supaya browser selesai layout tooltip (perlu ukuran
@@ -450,6 +451,88 @@
 
     elm.addEventListener("mousedown", onStart);
     elm.addEventListener("touchstart", onStart, { passive: false });
+  }
+
+  /** Tambahkan gagang kecil di pojok kanan-bawah tooltip supaya ukurannya
+   * (lebar/tinggi) bisa digeser-besar/kecilkan manual, dengan ukuran teks
+   * ikut menyesuaikan proporsional (bukan cuma kotaknya membesar). Dipakai
+   * bersama makeTooltipDraggable() pada tooltip yang sama, tapi lewat
+   * elemen gagang terpisah supaya drag-pindah & drag-resize tidak saling
+   * memicu (stopPropagation di gagang mencegah bubbling ke listener
+   * geser-pindah pada elm). */
+  function makeTooltipResizable(item) {
+    const tooltip = item.marker.getTooltip();
+    const elm = tooltip && tooltip.getElement();
+    if (!elm) return;
+
+    const handle = document.createElement("div");
+    handle.className = "peta-resize-handle";
+    handle.setAttribute("aria-hidden", "true");
+    elm.appendChild(handle);
+
+    const MIN_W = 56;
+    const MAX_W = 320;
+    const MIN_H = 40;
+    const MAX_H = 260;
+    const MIN_FONT = 6;
+    const MAX_FONT = 24;
+
+    let resizing = false;
+    let startClientX = 0;
+    let startClientY = 0;
+    let startWidth = 0;
+    let startHeight = 0;
+    let baseFontPx = 8;
+
+    function pointFromEvent(evt) {
+      const t = evt.touches && evt.touches[0] ? evt.touches[0] : evt;
+      return { x: t.clientX, y: t.clientY };
+    }
+
+    function onMove(evt) {
+      if (!resizing) return;
+      evt.preventDefault();
+      const p = pointFromEvent(evt);
+      const newWidth = Math.max(MIN_W, Math.min(MAX_W, startWidth + (p.x - startClientX)));
+      const newHeight = Math.max(MIN_H, Math.min(MAX_H, startHeight + (p.y - startClientY)));
+      elm.style.width = newWidth + "px";
+      elm.style.height = newHeight + "px";
+      const scale = newWidth / startWidth;
+      elm.style.fontSize = Math.max(MIN_FONT, Math.min(MAX_FONT, baseFontPx * scale)) + "px";
+      tooltip.update(); // paksa Leaflet hitung ulang posisi (direction:'center') sesuai ukuran baru
+    }
+
+    function onEnd() {
+      if (!resizing) return;
+      resizing = false;
+      elm.classList.remove("peta-resizing");
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onEnd);
+      document.removeEventListener("touchmove", onMove);
+      document.removeEventListener("touchend", onEnd);
+    }
+
+    function onStart(evt) {
+      resizing = true;
+      elm.classList.add("peta-resizing");
+      const p = pointFromEvent(evt);
+      startClientX = p.x;
+      startClientY = p.y;
+      startWidth = elm.offsetWidth;
+      startHeight = elm.offsetHeight;
+      // Dibaca ulang tiap mulai drag (bukan cuma sekali) supaya skala teks
+      // nyambung dari ukuran hasil resize sebelumnya, tidak lompat balik.
+      baseFontPx = parseFloat(getComputedStyle(elm).fontSize) || 8;
+      document.addEventListener("mousemove", onMove);
+      document.addEventListener("mouseup", onEnd);
+      document.addEventListener("touchmove", onMove, { passive: false });
+      document.addEventListener("touchend", onEnd);
+      evt.preventDefault();
+      evt.stopPropagation(); // jangan sampai memicu geser-pindah tooltip
+    }
+
+    handle.addEventListener("mousedown", onStart);
+    handle.addEventListener("touchstart", onStart, { passive: false });
   }
 
   /** Geser posisi tooltip yang saling tumpang tindih menjauh satu sama

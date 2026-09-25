@@ -57,7 +57,9 @@
 }
 .peta-popup h4 {
   margin: 0 0 1px;
-  font-size: 0.44rem;
+  /* em (bukan rem) supaya ikut membesar/mengecil saat tooltip di-resize
+     manual (ukuran font tooltip diubah lewat inline style, bukan CSS). */
+  font-size: 1.1em;
 }
 .peta-popup dl {
   margin: 0;
@@ -97,6 +99,35 @@
 .peta-popup-tooltip.peta-dragging {
   cursor: grabbing;
   opacity: 0.85;
+}
+.peta-popup-tooltip.peta-resizing {
+  opacity: 0.85;
+}
+.peta-popup-tooltip {
+  box-sizing: border-box;
+  overflow: hidden;
+  /* Tidak perlu set position di sini — .leaflet-tooltip bawaan Leaflet
+     sudah position:absolute, itu sudah cukup jadi konteks posisi utk
+     .peta-resize-handle. Jangan diubah jadi 'relative', nanti merusak
+     mekanisme posisi tooltip Leaflet sendiri. */
+}
+
+/* Gagang kecil di pojok kanan-bawah tooltip, dipakai utk mengubah ukuran
+   (lebar/tinggi) tooltip secara manual — teks ikut membesar/mengecil
+   mengikuti lebar barunya (lihat makeTooltipResizable di js/peta.js). */
+.peta-resize-handle {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 9px;
+  height: 9px;
+  cursor: nwse-resize;
+  background: linear-gradient(135deg, transparent 50%, #8a8779 50%);
+  opacity: 0.6;
+}
+.peta-resize-handle:hover,
+.peta-popup-tooltip.peta-resizing .peta-resize-handle {
+  opacity: 1;
 }
 
 /* Garis penghubung dari label yang ditempatkan di luar wilayah (mode
