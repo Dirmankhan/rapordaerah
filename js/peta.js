@@ -374,12 +374,74 @@
         }).addTo(state.labelLayer);
       }
 
-      state.labelMarkers.push({ marker, anchorLatLng: a.labelLatLng, trueLatLng: a.trueLatLng, line });
+      const item = { marker, anchorLatLng: a.labelLatLng, trueLatLng: a.trueLatLng, line, manuallyMoved: false };
+      state.labelMarkers.push(item);
+      makeTooltipDraggable(item);
     }
 
     // Tunggu 2 frame supaya browser selesai layout tooltip (perlu ukuran
     // sebenarnya/offsetWidth-Height) sebelum menghitung tumpang tindih.
     requestAnimationFrame(() => requestAnimationFrame(resolveLabelOverlaps));
+  }
+
+  /** Biarkan pengguna menggeser (drag) posisi tooltip secara manual dgn
+   * mouse/jari, kalau posisi otomatisnya masih kurang pas. Garis
+   * penghubung (mode kecamatan) ikut mengikuti. Posisi manual ini
+   * dipertahankan lintas pan/zoom, tapi direset kalau filter kabupaten/
+   * jenis/indikator diganti (karena semua label dibangun ulang). */
+  function makeTooltipDraggable(item) {
+    const tooltip = item.marker.getTooltip();
+    const elm = tooltip && tooltip.getElement();
+    if (!elm) return;
+
+    let dragging = false;
+    let startClientX = 0;
+    let startClientY = 0;
+    let startLayerPoint = null;
+
+    function pointFromEvent(evt) {
+      const t = evt.touches && evt.touches[0] ? evt.touches[0] : evt;
+      return { x: t.clientX, y: t.clientY };
+    }
+
+    function onMove(evt) {
+      if (!dragging) return;
+      evt.preventDefault();
+      const p = pointFromEvent(evt);
+      const newLayerPoint = startLayerPoint.add(L.point(p.x - startClientX, p.y - startClientY));
+      const newLatLng = state.map.layerPointToLatLng(newLayerPoint);
+      item.marker.setLatLng(newLatLng);
+      if (item.line) item.line.setLatLngs([item.trueLatLng, newLatLng]);
+    }
+
+    function onEnd() {
+      if (!dragging) return;
+      dragging = false;
+      item.manuallyMoved = true;
+      elm.classList.remove("peta-dragging");
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onEnd);
+      document.removeEventListener("touchmove", onMove);
+      document.removeEventListener("touchend", onEnd);
+    }
+
+    function onStart(evt) {
+      dragging = true;
+      elm.classList.add("peta-dragging");
+      const p = pointFromEvent(evt);
+      startClientX = p.x;
+      startClientY = p.y;
+      startLayerPoint = state.map.latLngToLayerPoint(item.marker.getLatLng());
+      document.addEventListener("mousemove", onMove);
+      document.addEventListener("mouseup", onEnd);
+      document.addEventListener("touchmove", onMove, { passive: false });
+      document.addEventListener("touchend", onEnd);
+      evt.preventDefault();
+      evt.stopPropagation(); // jangan sampai memicu drag peta di baliknya
+    }
+
+    elm.addEventListener("mousedown", onStart);
+    elm.addEventListener("touchstart", onStart, { passive: false });
   }
 
   /** Geser posisi tooltip yang saling tumpang tindih menjauh satu sama
@@ -390,7 +452,11 @@
     if (!map || state.labelMarkers.length < 2) return;
 
     const items = [];
-    for (const { marker, anchorLatLng, trueLatLng, line } of state.labelMarkers) {
+    for (const { marker, anchorLatLng, trueLatLng, line, manuallyMoved } of state.labelMarkers) {
+      // Posisi yang sudah digeser manual oleh pengguna dibiarkan tetap —
+      // tidak ikut disusun ulang otomatis (Leaflet tetap menjaga posisi
+      // layarnya benar sendiri saat pan/zoom karena sudah berupa latlng).
+      if (manuallyMoved) continue;
       const tooltip = marker.getTooltip();
       const elm = tooltip && tooltip.getElement();
       if (!elm) continue;

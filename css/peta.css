@@ -82,12 +82,21 @@
 }
 
 /* Tooltip permanen (bukan Leaflet popup): ringkas supaya muat di wilayah
-   kecil & tidak mudah tumpang tindih, selalu di atas polygon lain, tapi
-   tidak menghalangi drag/klik di peta. */
+   kecil & tidak mudah tumpang tindih, selalu di atas polygon lain. Bisa
+   digeser manual (drag) oleh pengguna kalau posisi otomatisnya kurang
+   pas — makanya pointer-events diaktifkan lagi utk tooltip ini saja. */
 .peta-popup-tooltip {
   padding: 1px 4px;
   z-index: 650;
   white-space: normal;
+  pointer-events: auto;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.peta-popup-tooltip.peta-dragging {
+  cursor: grabbing;
+  opacity: 0.85;
 }
 
 /* Garis penghubung dari label yang ditempatkan di luar wilayah (mode
