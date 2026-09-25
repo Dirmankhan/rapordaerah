@@ -35,7 +35,11 @@
     return String(s || "")
       .trim()
       .toLowerCase()
-      .replace(/\s+/g, " ");
+      .replace(/\s+/g, " ")
+      // Samakan semua varian tanda kutip tunggal/apostrof/backtick (mis. "Hu'u"
+      // vs "Hu`u") supaya perbedaan karakter Unicode tidak menggagalkan
+      // pencocokan nama kecamatan yang sebenarnya sama.
+      .replace(/[`´'‘’]/g, "'");
   }
 
   /** Samakan penulisan nama Kabupaten/Kota: GeoJSON pakai "Sumbawa Barat" /
