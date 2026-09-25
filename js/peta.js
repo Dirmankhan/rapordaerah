@@ -202,7 +202,9 @@
       if (!inSelectedKab) style.fillOpacity = Math.min(style.fillOpacity, 0.12);
       layer.setStyle(style);
       layer.unbindTooltip();
-      layer.bindTooltip(popupHtml(props, stats), { sticky: true, className: "peta-popup-tooltip" });
+      if (inSelectedKab) {
+        layer.bindTooltip(popupHtml(props, stats), { sticky: true, className: "peta-popup-tooltip" });
+      }
     });
   }
 
