@@ -159,6 +159,7 @@ css/peta.css        Tampilan khusus peta (ukuran peta, legenda, popup)
 js/config.js        ID spreadsheet, daftar indikator, & peta sumber SPM per kabupaten
 js/gviz.js          Pembaca Google Sheets via Google Visualization API
 js/shared.js        Util bersama: warna kategori, badge chip, escape HTML, deteksi SMK
+js/cache.js         Cache hasil fetch Google Sheets di sessionStorage (dipakai lintas halaman)
 js/data.js          Pengambilan & penggabungan data sekolah+indikator (dipakai app.js & peta.js)
 js/app.js           Logika halaman Rapor Satuan Pendidikan
 js/spm.js           Logika halaman Indikator SPM per Kabupaten/Kota
@@ -184,6 +185,18 @@ js/peta.js          Logika halaman Peta Sebaran Kecamatan
   salah satu berkas tersebut, naikkan angka `?v=` di ketiga HTML. Jika
   dashboard tampak belum menampilkan perubahan terbaru meski deploy
   sudah sukses, coba hard refresh (Ctrl/Cmd+Shift+R).
+- **Cache antar-halaman** (`js/cache.js`): data hasil fetch dari Google
+  Sheets yang berat (identitas+indikator sekolah dipakai `index.html` &
+  `peta.html`; sheet referensi NPSN & sheet `spm` beserta nilai per
+  kabupaten) disimpan di `sessionStorage` selama 10 menit. Jadi kalau
+  pengguna pindah antar halaman (mis. dari Rapor Satuan Pendidikan ke Peta)
+  dalam tab yang sama, halaman berikutnya langsung pakai data dari cache
+  alih-alih menunggu fetch ulang — muncul status "Memuat data dari cache...".
+  Cache otomatis basi setelah 10 menit (data berikutnya fetch ulang dari
+  Sheets) dan tidak dibagi antar tab/perangkat (sessionStorage per-tab).
+  Kalau `sessionStorage` penuh/diblokir (mis. mode penyamaran), cache
+  dilewati saja secara diam-diam — halaman tetap jalan seperti biasa
+  (fetch langsung tiap kali).
 - Beberapa judul file sumber di Drive ternyata memiliki **duplikat** (judul
   sama, ID berbeda, folder berbeda) — mis. `RAPOR-KAB-LOMBOK-UTARA-DATA-2025`
   ada 2 salinan. `SPM_SOURCE_BY_TITLE` di `js/config.js` memilih salinan

@@ -56,9 +56,21 @@
     return Number.isNaN(n) ? null : n;
   }
 
+  // Data identitas+indikator sekolah sama persis dipakai index.html & peta.html
+  // — di-cache di sessionStorage supaya pindah antar 2 halaman itu tidak
+  // perlu menunggu fetch ulang ke Google Sheets selama masih segar.
+  const CACHE_KEY = "schoolData:" + CFG.SOURCE_SHEET_ID;
+  const CACHE_TTL_MS = 10 * 60 * 1000; // 10 menit
+
   /** Ambil & gabungkan identitas + semua indikator di CFG.INDICATORS.
    * onProgress(pesan) dipanggil di tiap tahap untuk status loading. */
   async function loadAll(onProgress) {
+    const cached = window.DataCache && window.DataCache.readFresh(CACHE_KEY, CACHE_TTL_MS);
+    if (cached) {
+      onProgress("Memuat data dari cache (tersimpan dari halaman sebelumnya)...");
+      return cached;
+    }
+
     onProgress("Membaca peta lokasi data (sheet konfigurasi)...");
     const map = await loadIndicatorMap();
 
@@ -110,7 +122,9 @@
       return school;
     });
 
-    return { schools, indicatorBlocks };
+    const result = { schools, indicatorBlocks };
+    if (window.DataCache) window.DataCache.write(CACHE_KEY, result);
+    return result;
   }
 
   window.SchoolData = { loadAll };

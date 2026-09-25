@@ -76,11 +76,18 @@
     return -1;
   }
 
+  const REFERENSI_CACHE_TTL_MS = 10 * 60 * 1000; // 10 menit
+
   /** Baca sheet referensi NPSN (data Dapodik) dan bangun peta
    * npsn -> {kabkota, kecamatan} memakai nama acuan resminya, dicoba
    * dari nama tab pertama di CFG.REFERENSI_SHEET_NAMES yang berhasil &
-   * punya kolom "npsn". */
+   * punya kolom "npsn". Di-cache di sessionStorage (sheet ini besar,
+   * ribuan baris) supaya balik lagi ke halaman peta tidak fetch ulang. */
   async function loadReferensiByNpsn() {
+    const cacheKey = "referensi:" + CFG.CONFIG_SHEET_ID;
+    const cachedEntries = window.DataCache && window.DataCache.readFresh(cacheKey, REFERENSI_CACHE_TTL_MS);
+    if (cachedEntries) return new Map(cachedEntries);
+
     for (const sheetName of CFG.REFERENSI_SHEET_NAMES) {
       let raw;
       try {
@@ -101,6 +108,7 @@
         if (!npsn) continue;
         map.set(npsn, { kabkota: row[idxKab] ?? "", kecamatan: row[idxKec] ?? "" });
       }
+      if (window.DataCache) window.DataCache.write(cacheKey, Array.from(map.entries()));
       return map;
     }
     return new Map();

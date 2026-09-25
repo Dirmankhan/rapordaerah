@@ -33,12 +33,19 @@
 
   const indicatorKey = (no, nama) => no + "|" + nama;
 
+  const CACHE_TTL_MS = 10 * 60 * 1000; // 10 menit
+
   /** Baca sheet "spm": tiap baris = 1 pasangan (indikator, kabupaten/kota)
    * dengan rujukan sel Label/Nilai Capaian 2025 miliknya sendiri (kolom
    * "Wilayah" menandai kabupaten/kota mana baris itu berlaku), plus daftar
    * nama kabupaten/kota & judul spreadsheet sumbernya (kolom Kabupaten/
-   * Sumber data). */
+   * Sumber data). Di-cache di sessionStorage supaya balik lagi ke halaman
+   * ini dalam tab yang sama tidak perlu fetch ulang. */
   async function loadSpmConfig() {
+    const cacheKey = "spmConfig:" + CFG.CONFIG_SHEET_ID + ":" + CFG.SPM_SHEET_NAME;
+    const cached = window.DataCache && window.DataCache.readFresh(cacheKey, CACHE_TTL_MS);
+    if (cached) return cached;
+
     const raw = await Gviz.fetchSheetRaw(CFG.CONFIG_SHEET_ID, CFG.SPM_SHEET_NAME);
     if (raw.length < 2) throw new Error('Sheet "' + CFG.SPM_SHEET_NAME + '" kosong / format tidak dikenali.');
     const header = raw[0];
@@ -80,7 +87,9 @@
         kabupaten.push({ nama: row[idx.kab], sumberTitle: row[idx.sumber] ?? "" });
       }
     }
-    return { rows, indicatorOrder, kabupaten };
+    const result = { rows, indicatorOrder, kabupaten };
+    if (window.DataCache) window.DataCache.write(cacheKey, result);
+    return result;
   }
 
   /** Ambil label+nilai capaian 2025 untuk sekumpulan baris (indikator) dari
@@ -183,6 +192,12 @@
     }
 
     if (!state.cache[nama]) {
+      const sessionCacheKey = "spmValues:" + CFG.CONFIG_SHEET_ID + ":" + nama;
+      const cachedValues = window.DataCache && window.DataCache.readFresh(sessionCacheKey, CACHE_TTL_MS);
+      if (cachedValues) state.cache[nama] = cachedValues;
+    }
+
+    if (!state.cache[nama]) {
       const rowsForKab = state.rows.filter((r) => r.wilayah === nama);
       if (rowsForKab.length === 0) {
         // Belum ada baris rujukan untuk kabupaten/kota ini di sheet spm —
@@ -197,6 +212,9 @@
             byKey[indicatorKey(r.no, r.nama)] = values[i];
           });
           state.cache[nama] = state.indicatorOrder.map((ind) => byKey[indicatorKey(ind.no, ind.nama)] || null);
+          if (window.DataCache) {
+            window.DataCache.write("spmValues:" + CFG.CONFIG_SHEET_ID + ":" + nama, state.cache[nama]);
+          }
         } catch (err) {
           console.error(err);
           setStatus("Gagal memuat data " + nama + ": " + err.message, true);
