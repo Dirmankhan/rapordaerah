@@ -127,6 +127,18 @@
     return a + (b - a) * t;
   }
 
+  // Warna abu netral yang dicampur ke kecamatan di kabupaten yang TIDAK
+  // dipilih, supaya nampak redup (bukan warna asli capaiannya) tanpa
+  // membuatnya nyaris tak terlihat di peta.
+  const MUTE_GRAY = "#9a988f";
+  const MUTE_MIX_RATIO = 0.75; // 0 = warna asli, 1 = abu penuh
+
+  function muteColor(hex) {
+    const rgb = hexToRgb(hex);
+    const gray = hexToRgb(MUTE_GRAY);
+    return rgbToHex(rgb.map((v, i) => lerp(v, gray[i], MUTE_MIX_RATIO)));
+  }
+
   function colorForT(t) {
     t = Math.max(0, Math.min(1, t));
     for (let i = 0; i < GRADIENT_STOPS.length - 1; i++) {
@@ -204,7 +216,10 @@
       const stats = computeStats(schools, state.indicatorKey);
       const style = styleForStats(stats);
       const inSelectedKab = !selectedKabNorm || normKabKota(props.kab_kota) === selectedKabNorm;
-      if (!inSelectedKab) style.fillOpacity = Math.min(style.fillOpacity, 0.12);
+      if (!inSelectedKab) {
+        style.fillColor = muteColor(style.fillColor);
+        style.fillOpacity = Math.min(style.fillOpacity, 0.35);
+      }
       layer.setStyle(style);
       layer.unbindTooltip();
       if (inSelectedKab) {
