@@ -122,10 +122,13 @@
   // Warna gradasi merah -> kuning -> hijau
   // -----------------------------------------------------------------------
 
+  // Titik gradasi disejajarkan dgn ambang skor rata-rata tertimbang (lihat
+  // styleForStats): 0% = sangat merah, <=40% masih merah, 75% mulai hijau,
+  // 100% = sangat hijau. Antara 40%-75% melewati kuning sbg titik netral.
   const GRADIENT_STOPS = [
     [0, "#a50026"],
-    [0.25, "#f46d43"],
-    [0.5, "#ffffbf"],
+    [0.4, "#f46d43"],
+    [0.575, "#ffffbf"],
     [0.75, "#66bd63"],
     [1, "#006837"],
   ];
@@ -170,9 +173,9 @@
   }
 
   /** Hitung statistik label capaian utk 1 indikator dari sekumpulan sekolah.
-   * `total`/`baik`/`kurang`/`pctBaik`/`pctKurang` dipakai utk skor warna
-   * peta (spt semula, tidak menghitung "Tidak Tersedia"/data kosong).
-   * `totalSekolah`/`sedang`/`tidakTersedia` ditambahkan utk tooltip: semua
+   * `total`/`baik`/`sedang`/`kurang`/`pctBaik`/`pctSedang`/`pctKurang`
+   * dipakai utk skor warna peta (tidak menghitung "Tidak Tersedia"/data
+   * kosong). `totalSekolah`/`tidakTersedia` ditambahkan utk tooltip: semua
    * sekolah dihitung, sekolah tanpa label capaian dianggap "Tidak Tersedia". */
   function computeStats(schools, indicatorKey) {
     let total = 0;
@@ -197,16 +200,26 @@
       else if (cat.rank === 2) kurang++;
     }
     const pctBaik = total ? (100 * baik) / total : null;
+    const pctSedang = total ? (100 * sedang) / total : null;
     const pctKurang = total ? (100 * kurang) / total : null;
-    return { total, baik, sedang, kurang, tidakTersedia, pctBaik, pctKurang, totalSekolah: schools.length };
+    return { total, baik, sedang, kurang, tidakTersedia, pctBaik, pctSedang, pctKurang, totalSekolah: schools.length };
+  }
+
+  /** Skor rata-rata tertimbang (0-100): Baik/Tinggi bernilai penuh (100),
+   * Sedang separuh (50), Kurang/Rendah tidak bernilai (0). Karena
+   * pctBaik + pctSedang + pctKurang = 100, skor = pctBaik + pctSedang/2.
+   * Ambang warna: <=40 merah (0 = sangat merah), >=75 hijau
+   * (100 = sangat hijau), di antaranya melewati kuning (lihat
+   * GRADIENT_STOPS). */
+  function avgScore(stats) {
+    return stats.pctBaik + stats.pctSedang * 0.5;
   }
 
   function styleForStats(stats) {
     if (stats.total === 0) {
       return { fillColor: NODATA_COLOR, fillOpacity: 0.55, color: "#ffffff", weight: 1 };
     }
-    const score = stats.pctBaik - stats.pctKurang; // -100..100
-    const t = (score + 100) / 200;
+    const t = avgScore(stats) / 100;
     return { fillColor: colorForT(t), fillOpacity: 0.75, color: "#ffffff", weight: 1 };
   }
 

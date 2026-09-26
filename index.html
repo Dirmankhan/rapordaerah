@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Dashboard Rapor Pendidikan Daerah</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="css/style.css?v=35" />
-  <link rel="stylesheet" href="css/peta.css?v=35" />
+  <link rel="stylesheet" href="css/style.css?v=36" />
+  <link rel="stylesheet" href="css/peta.css?v=36" />
 </head>
 <body>
   <header class="app-header">
@@ -47,11 +47,11 @@
 
       <div id="peta-map"></div>
       <div id="peta-legend" class="peta-legend">
-        <strong>Persentase satuan pendidikan berlabel Kurang/Rendah dikurangi Baik/Tinggi</strong>
+        <strong>Skor rata-rata tertimbang (Baik/Tinggi 100%, Sedang 50%, Kurang/Rendah 0%)</strong>
         <div class="peta-legend-bar"></div>
         <div class="peta-legend-labels">
-          <span>&larr; Kurang/Rendah &gt;60%</span>
-          <span>Baik/Tinggi &gt;60% &rarr;</span>
+          <span>&larr; &le;40% (merah, 0% sangat merah)</span>
+          <span>&ge;75% (hijau, 100% sangat hijau) &rarr;</span>
         </div>
         <div class="peta-legend-nodata"><span class="peta-swatch peta-swatch-nodata"></span> Tidak ada data</div>
       </div>
@@ -112,12 +112,12 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="js/config.js?v=35"></script>
-  <script src="js/gviz.js?v=35"></script>
-  <script src="js/shared.js?v=35"></script>
-  <script src="js/cache.js?v=35"></script>
-  <script src="js/data.js?v=35"></script>
-  <script src="js/peta.js?v=35"></script>
-  <script src="js/app.js?v=35"></script>
+  <script src="js/config.js?v=36"></script>
+  <script src="js/gviz.js?v=36"></script>
+  <script src="js/shared.js?v=36"></script>
+  <script src="js/cache.js?v=36"></script>
+  <script src="js/data.js?v=36"></script>
+  <script src="js/peta.js?v=36"></script>
+  <script src="js/app.js?v=36"></script>
 </body>
 </html>
