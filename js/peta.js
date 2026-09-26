@@ -19,6 +19,7 @@
     jenisList: [], // nama asli Jenis Satuan Pendidikan dari data sekolah
     selectedKab: "",
     selectedJenis: "",
+    tooltipsVisible: true,
   };
 
   function setStatus(msg, isError) {
@@ -393,7 +394,7 @@
 
     // Tunggu 2 frame supaya browser selesai layout tooltip (perlu ukuran
     // sebenarnya/offsetWidth-Height) sebelum menghitung tumpang tindih.
-    requestAnimationFrame(() => requestAnimationFrame(resolveLabelOverlaps));
+    if (state.tooltipsVisible) requestAnimationFrame(() => requestAnimationFrame(resolveLabelOverlaps));
   }
 
   /** Biarkan pengguna menggeser (drag) posisi tooltip secara manual dgn
@@ -543,7 +544,7 @@
    * semua tooltip permanen tetap terbaca meski berdekatan di peta. */
   function resolveLabelOverlaps() {
     const map = state.map;
-    if (!map || state.labelMarkers.length < 2) return;
+    if (!map || !state.tooltipsVisible || state.labelMarkers.length < 2) return;
 
     const items = [];
     for (const { marker, anchorLatLng, trueLatLng, line, manuallyMoved } of state.labelMarkers) {
@@ -614,6 +615,24 @@
     }
   }
 
+  /** Tampilkan/sembunyikan semua tooltip label (+ garis penghubungnya)
+   * sekaligus lewat tombol, tanpa membongkar data label yang sudah
+   * dibangun — cukup lepas/pasang layer-nya dari peta. */
+  function setTooltipsVisible(visible) {
+    state.tooltipsVisible = visible;
+    if (state.map && state.labelLayer) {
+      const onMap = state.map.hasLayer(state.labelLayer);
+      if (visible && !onMap) {
+        state.labelLayer.addTo(state.map);
+        requestAnimationFrame(() => requestAnimationFrame(resolveLabelOverlaps));
+      } else if (!visible && onMap) {
+        state.map.removeLayer(state.labelLayer);
+      }
+    }
+    const btn = el("peta-toggle-tooltips");
+    if (btn) btn.textContent = visible ? "Sembunyikan Label Peta" : "Tampilkan Label Peta";
+  }
+
   // -----------------------------------------------------------------------
   // Filter UI
   // -----------------------------------------------------------------------
@@ -672,6 +691,9 @@
       state.indicatorKey = indSelect.value;
       restyleLayer();
     });
+
+    const toggleBtn = el("peta-toggle-tooltips");
+    toggleBtn.addEventListener("click", () => setTooltipsVisible(!state.tooltipsVisible));
   }
 
   // -----------------------------------------------------------------------
