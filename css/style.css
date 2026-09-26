@@ -398,17 +398,19 @@ tr.row-expanded {
 }
 .detail-indicator dl {
   margin: 0;
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 4px 10px;
   font-size: 0.8rem;
 }
 .detail-indicator dt {
   color: var(--text-secondary);
+  margin-top: 6px;
+}
+.detail-indicator dt:first-of-type {
+  margin-top: 0;
 }
 .detail-indicator dd {
   margin: 0;
   font-weight: 600;
+  overflow-wrap: break-word;
 }
 
 .pagination {
