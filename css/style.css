@@ -391,6 +391,10 @@ tr.row-expanded {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 16px;
   padding: 8px 0;
+  /* .detail-row td punya white-space: nowrap (lihat aturan th, td di atas)
+     yang ikut diwarisi ke sini — reset supaya label/nilai indikator yang
+     panjang bisa membungkus, bukan meluber ke kotak indikator sebelahnya. */
+  white-space: normal;
 }
 .detail-indicator h4 {
   margin: 0 0 6px;
