@@ -4,23 +4,68 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Dashboard Rapor Pendidikan Daerah</title>
-  <link rel="stylesheet" href="css/style.css?v=30" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="css/style.css?v=31" />
+  <link rel="stylesheet" href="css/peta.css?v=31" />
 </head>
 <body>
   <header class="app-header">
     <h1>Dashboard Rapor Pendidikan Daerah</h1>
     <p class="subtitle">Provinsi Nusa Tenggara Barat &middot; berdasarkan data Rapor Pendidikan 2025</p>
     <nav class="app-nav">
-      <a href="index.html" class="app-nav-link active">Rapor Satuan Pendidikan</a>
+      <a href="index.html" class="app-nav-link active">Dashboard</a>
       <a href="spm.html" class="app-nav-link">Indikator SPM Kab./Kota</a>
-      <a href="peta.html" class="app-nav-link">Peta Sebaran Kecamatan</a>
     </nav>
   </header>
 
   <main class="app-main">
-    <div id="status-box" class="status-box" hidden></div>
+    <section class="panel" aria-label="Peta sebaran kecamatan">
+      <h2>Peta Sebaran Capaian per Kecamatan</h2>
+      <div id="peta-status-box" class="status-box" hidden></div>
 
-    <section class="panel" aria-label="Filter data">
+      <div class="filter-bar">
+        <div class="filters">
+          <div class="filter-item">
+            <label for="peta-kab-select">Kabupaten/Kota</label>
+            <select id="peta-kab-select">
+              <option value="">Semua Kabupaten/Kota</option>
+            </select>
+          </div>
+          <div class="filter-item">
+            <label for="peta-jenis-select">Jenis Satuan Pendidikan</label>
+            <select id="peta-jenis-select">
+              <option value="">Semua Jenjang</option>
+            </select>
+          </div>
+          <div class="filter-item">
+            <label for="peta-indikator-select">Indikator Prioritas</label>
+            <select id="peta-indikator-select"></select>
+          </div>
+        </div>
+      </div>
+
+      <div id="peta-map"></div>
+      <div id="peta-legend" class="peta-legend">
+        <strong>Persentase satuan pendidikan berlabel Kurang/Rendah dikurangi Baik/Tinggi</strong>
+        <div class="peta-legend-bar"></div>
+        <div class="peta-legend-labels">
+          <span>&larr; Kurang/Rendah &gt;60%</span>
+          <span>Baik/Tinggi &gt;60% &rarr;</span>
+        </div>
+        <div class="peta-legend-nodata"><span class="peta-swatch peta-swatch-nodata"></span> Tidak ada data</div>
+      </div>
+      <p id="peta-unmatched" class="muted small" hidden></p>
+      <p class="muted small">
+        Batas administrasi kecamatan: data terbuka
+        <a href="https://github.com/Alf-Anas/batas-administrasi-indonesia" target="_blank" rel="noopener">Alf-Anas/batas-administrasi-indonesia</a>
+        (disederhanakan).
+      </p>
+    </section>
+
+    <section class="panel" aria-label="Rapor satuan pendidikan">
+      <h2>Rapor Satuan Pendidikan</h2>
+      <div id="status-box" class="status-box" hidden></div>
+
       <div class="filter-bar">
         <div id="filters" class="filters"></div>
         <button id="reset-filters" class="btn-secondary">Reset Filter</button>
@@ -65,11 +110,13 @@
     </p>
   </footer>
 
-  <script src="js/config.js?v=30"></script>
-  <script src="js/gviz.js?v=30"></script>
-  <script src="js/shared.js?v=30"></script>
-  <script src="js/cache.js?v=30"></script>
-  <script src="js/data.js?v=30"></script>
-  <script src="js/app.js?v=30"></script>
+  <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="js/config.js?v=31"></script>
+  <script src="js/gviz.js?v=31"></script>
+  <script src="js/shared.js?v=31"></script>
+  <script src="js/cache.js?v=31"></script>
+  <script src="js/data.js?v=31"></script>
+  <script src="js/peta.js?v=31"></script>
+  <script src="js/app.js?v=31"></script>
 </body>
 </html>

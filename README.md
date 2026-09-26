@@ -47,7 +47,62 @@ dashboard.
 
 ## Fitur
 
-### Halaman "Rapor Satuan Pendidikan" (`index.html`)
+`index.html` sekarang jadi satu halaman gabungan: **Peta Sebaran Capaian
+per Kecamatan** di bagian atas, lalu **Rapor Satuan Pendidikan** di
+bawahnya. Keduanya independen — filter, status loading, dan data yang
+ditampilkan masing-masing terpisah (tidak saling memengaruhi), hanya
+ditempatkan di satu halaman yang sama supaya tidak perlu berpindah
+halaman untuk melihat keduanya.
+
+### Bagian "Peta Sebaran Capaian per Kecamatan" (`index.html`, atas)
+
+Peta choropleth (Leaflet + OpenStreetMap) batas kecamatan se-NTB, diwarnai
+gradasi merah→kuning→hijau berdasarkan **(% satdik berlabel Baik/Tinggi) −
+(% satdik berlabel Kurang/Rendah)** untuk indikator prioritas yang dipilih:
+semakin merah kalau porsi Kurang/Rendah dominan (>60% → merah pekat),
+semakin hijau kalau porsi Baik/Tinggi dominan (>60% → hijau pekat).
+Kecamatan tanpa data sama sekali untuk indikator itu diberi pola abu-abu
+("Tidak ada data"), bukan warna netral, supaya tidak tertukar dengan
+kecamatan yang benar-benar berimbang.
+
+- **Filter Kabupaten/Kota**: meredupkan (dan memutihkan warnanya) kecamatan
+  di luar kabupaten terpilih tanpa mengambil data ulang atau memotong
+  tampilan peta (kecamatan lain tetap terlihat & bisa dibandingkan).
+- **Filter Jenis Satuan Pendidikan**: mempersempit sekolah yang dihitung ke
+  jenjang yang dipilih; indikator khusus SMK (A.4, D.17) di filter
+  Indikator Prioritas hanya muncul saat jenjang SMK dipilih.
+- **Filter Indikator Prioritas**: daftarnya sama dengan `CFG.INDICATORS` di
+  `js/config.js` (indikator yang sama dipakai di bagian Rapor Satuan
+  Pendidikan); mengganti pilihan langsung mewarnai ulang peta tanpa fetch
+  baru, karena data semua indikator sudah diambil sekaligus di awal.
+- Setiap kecamatan (atau kabupaten, kalau belum ada filter kabupaten
+  dipilih) punya **tooltip permanen** (tidak perlu hover) berisi jumlah
+  sekolah dan rincian Baik/Sedang/Kurang/Tidak Tersedia — otomatis
+  ditata ulang supaya tidak saling tumpang tindih, dan bisa digeser atau
+  diubah ukurannya secara manual oleh pengguna kalau posisi/ukuran
+  otomatisnya kurang pas.
+- Batas administrasi kecamatan (`data/ntb_kecamatan.geojson`) adalah data
+  terbuka dari
+  [Alf-Anas/batas-administrasi-indonesia](https://github.com/Alf-Anas/batas-administrasi-indonesia)
+  (disederhanakan dengan algoritma Douglas-Peucker dari ~550MB shapefile
+  nasional menjadi ±750KB khusus Provinsi NTB, 117 kecamatan/10
+  kabupaten-kota).
+- **Wilayah tiap satdik dicari lewat NPSN di sheet referensi** (tab
+  `referensi` atau `Copy of Query result` di `CONFIG_SHEET_ID` — data
+  Dapodik dengan kolom `npsn`, `kecamatan`, `kabupaten`, dst.), bukan dari
+  kolom Kecamatan/Kabupaten di data rapor — supaya penulisan namanya
+  konsisten dan lebih mudah dicocokkan ke batas wilayah GeoJSON. Kalau
+  NPSN suatu satdik tidak ketemu di sheet referensi, otomatis fallback ke
+  kolom Kecamatan/Kabupaten dari data rapor.
+- Nama kabupaten/kecamatan (baik dari sheet referensi maupun fallback-nya)
+  dicocokkan otomatis ke GeoJSON (tidak peka huruf besar/kecil, dengan/
+  tanpa awalan "Kabupaten"/"Kota"/"Kec.", varian tanda kutip/apostrof).
+  Bagian ini selalu menampilkan ringkasan: berapa satdik yang pakai sheet
+  referensi vs fallback, dan berapa kecamatan di peta yang cocok/tidak
+  cocok (bukan gagal diam-diam) — kecamatan yang tidak cocok tampil
+  abu-abu dan namanya didaftar supaya mudah ditelusuri.
+
+### Bagian "Rapor Satuan Pendidikan" (`index.html`, bawah)
 
 - **Filter**: Kabupaten/Kota, Kecamatan (multi-pilih, mengikuti
   Kabupaten/Kota), Jenis Satuan Pendidikan (multi-pilih), Status Satuan
@@ -106,64 +161,22 @@ Data tiap kabupaten/kota diambil sekali saat pertama dipilih di dropdown,
 lalu disimpan di memori (tidak diambil ulang saat bolak-balik pilihan dalam
 sesi yang sama).
 
-### Halaman "Peta Sebaran Kecamatan" (`peta.html`)
-
-Peta choropleth (Leaflet + OpenStreetMap) batas kecamatan se-NTB, diwarnai
-gradasi merah→kuning→hijau berdasarkan **(% satdik berlabel Baik/Tinggi) −
-(% satdik berlabel Kurang/Rendah)** untuk indikator prioritas yang dipilih:
-semakin merah kalau porsi Kurang/Rendah dominan (>60% → merah pekat),
-semakin hijau kalau porsi Baik/Tinggi dominan (>60% → hijau pekat).
-Kecamatan tanpa data sama sekali untuk indikator itu diberi pola abu-abu
-("Tidak ada data"), bukan warna netral, supaya tidak tertukar dengan
-kecamatan yang benar-benar berimbang.
-
-- **Filter Kabupaten/Kota**: mempersempit peta (zoom + meredupkan
-  kecamatan di luar kabupaten terpilih) tanpa mengambil data ulang.
-- **Filter Indikator Prioritas**: daftarnya sama dengan `CFG.INDICATORS` di
-  `js/config.js` (indikator yang sama dipakai di halaman utama); mengganti
-  pilihan langsung mewarnai ulang peta tanpa fetch baru, karena data semua
-  indikator sudah diambil sekaligus di awal.
-- Arahkan kursor ke sebuah kecamatan untuk lihat jumlah satdik yang
-  dinilai serta persentase persisnya (angka pastinya selalu ada di
-  tooltip, tidak hanya warna, untuk pengguna buta warna).
-- Batas administrasi kecamatan (`data/ntb_kecamatan.geojson`) adalah data
-  terbuka dari
-  [Alf-Anas/batas-administrasi-indonesia](https://github.com/Alf-Anas/batas-administrasi-indonesia)
-  (disederhanakan dengan algoritma Douglas-Peucker dari ~550MB shapefile
-  nasional menjadi ±750KB khusus Provinsi NTB, 117 kecamatan/10
-  kabupaten-kota).
-- **Wilayah tiap satdik dicari lewat NPSN di sheet referensi** (tab
-  `referensi` atau `Copy of Query result` di `CONFIG_SHEET_ID` — data
-  Dapodik dengan kolom `npsn`, `kecamatan`, `kabupaten`, dst.), bukan dari
-  kolom Kecamatan/Kabupaten di data rapor — supaya penulisan namanya
-  konsisten dan lebih mudah dicocokkan ke batas wilayah GeoJSON. Kalau
-  NPSN suatu satdik tidak ketemu di sheet referensi, otomatis fallback ke
-  kolom Kecamatan/Kabupaten dari data rapor.
-- Nama kabupaten/kecamatan (baik dari sheet referensi maupun fallback-nya)
-  dicocokkan otomatis ke GeoJSON (tidak peka huruf besar/kecil, dengan/
-  tanpa awalan "Kabupaten"/"Kota"/"Kec."). Halaman selalu menampilkan
-  ringkasan: berapa satdik yang pakai sheet referensi vs fallback, dan
-  berapa kecamatan di peta yang cocok/tidak cocok (bukan gagal diam-diam)
-  — kecamatan yang tidak cocok tampil abu-abu dan namanya didaftar supaya
-  mudah ditelusuri.
-
 ## Struktur berkas
 
 ```
-index.html         Halaman Rapor Satuan Pendidikan
+index.html          Halaman gabungan: Peta Sebaran Kecamatan (atas) + Rapor Satuan Pendidikan (bawah)
 spm.html            Halaman Indikator SPM per Kabupaten/Kota
-peta.html            Halaman Peta Sebaran Kecamatan
 data/ntb_kecamatan.geojson  Batas kecamatan se-NTB (disederhanakan)
 css/style.css       Tampilan bersama semua halaman (mendukung mode gelap otomatis)
-css/peta.css        Tampilan khusus peta (ukuran peta, legenda, popup)
+css/peta.css        Tampilan khusus peta (ukuran peta, legenda, tooltip)
 js/config.js        ID spreadsheet, daftar indikator, & peta sumber SPM per kabupaten
 js/gviz.js          Pembaca Google Sheets via Google Visualization API
 js/shared.js        Util bersama: warna kategori, badge chip, escape HTML, deteksi SMK
 js/cache.js         Cache hasil fetch Google Sheets di sessionStorage (dipakai lintas halaman)
 js/data.js          Pengambilan & penggabungan data sekolah+indikator (dipakai app.js & peta.js)
-js/app.js           Logika halaman Rapor Satuan Pendidikan
+js/app.js           Logika bagian Rapor Satuan Pendidikan (di index.html)
 js/spm.js           Logika halaman Indikator SPM per Kabupaten/Kota
-js/peta.js          Logika halaman Peta Sebaran Kecamatan
+js/peta.js          Logika bagian Peta Sebaran Kecamatan (di index.html)
 ```
 
 ## Catatan teknis
@@ -179,19 +192,26 @@ js/peta.js          Logika halaman Peta Sebaran Kecamatan
   domain `docs.google.com` diblokir oleh kebijakan proxy sandbox. Mohon uji
   dengan membuka halaman di browser biasa (lingkungan pengguna tidak
   memiliki batasan ini) setelah deploy.
-- `index.html`, `spm.html`, dan `peta.html` memuat `css/style.css` dan
-  berkas di `js/` dengan query `?v=<angka>` supaya browser tidak
-  menampilkan versi lama dari cache setelah deploy baru. Saat mengubah
-  salah satu berkas tersebut, naikkan angka `?v=` di ketiga HTML. Jika
-  dashboard tampak belum menampilkan perubahan terbaru meski deploy
-  sudah sukses, coba hard refresh (Ctrl/Cmd+Shift+R).
-- **Cache antar-halaman** (`js/cache.js`): data hasil fetch dari Google
-  Sheets yang berat (identitas+indikator sekolah dipakai `index.html` &
-  `peta.html`; sheet referensi NPSN & sheet `spm` beserta nilai per
-  kabupaten) disimpan di `sessionStorage` selama 10 menit. Jadi kalau
-  pengguna pindah antar halaman (mis. dari Rapor Satuan Pendidikan ke Peta)
-  dalam tab yang sama, halaman berikutnya langsung pakai data dari cache
-  alih-alih menunggu fetch ulang — muncul status "Memuat data dari cache...".
+- `index.html` dan `spm.html` memuat `css/style.css` dan berkas di `js/`
+  dengan query `?v=<angka>` supaya browser tidak menampilkan versi lama
+  dari cache setelah deploy baru. Saat mengubah salah satu berkas
+  tersebut, naikkan angka `?v=` di kedua HTML. Jika dashboard tampak belum
+  menampilkan perubahan terbaru meski deploy sudah sukses, coba hard
+  refresh (Ctrl/Cmd+Shift+R).
+- Di `index.html`, bagian peta (`js/peta.js`) dan bagian rapor (`js/app.js`)
+  masing-masing memanggil `SchoolData.loadAll()` sendiri-sendiri (independen,
+  sesuai permintaan supaya filter & state keduanya tidak saling
+  memengaruhi) — keduanya memuat dataset identitas+indikator yang sama,
+  tapi berkat `js/cache.js` panggilan kedua langsung kena cache
+  `sessionStorage`, bukan fetch ganda ke Google Sheets.
+- **Cache antar-halaman/bagian** (`js/cache.js`): data hasil fetch dari
+  Google Sheets yang berat (identitas+indikator sekolah dipakai bagian
+  Peta & Rapor di `index.html`; sheet referensi NPSN & sheet `spm` beserta
+  nilai per kabupaten) disimpan di `sessionStorage` selama 10 menit. Jadi
+  kalau pengguna membuka ulang `index.html` atau berpindah ke/dari
+  `spm.html` dalam tab yang sama, pemuatan berikutnya langsung pakai data
+  dari cache alih-alih menunggu fetch ulang — muncul status "Memuat data
+  dari cache...".
   Cache otomatis basi setelah 10 menit (data berikutnya fetch ulang dari
   Sheets) dan tidak dibagi antar tab/perangkat (sessionStorage per-tab).
   Kalau `sessionStorage` penuh/diblokir (mis. mode penyamaran), cache

@@ -110,7 +110,7 @@ window.DASHBOARD_CONFIG = {
     "RAPOR-KOTA-BIMA-DATA-2025": "1sjUTXBINeuj9qAMbUzX6xHxBY10Y5AvZ14RtOL5iMd0",
   },
 
-  // --- Halaman Peta Sebaran Kecamatan (peta.html) ------------------------
+  // --- Bagian Peta Sebaran Kecamatan (index.html) -------------------------
   //
   // Sheet referensi NPSN (data Dapodik: npsn, kecamatan, kabupaten, dst.)
   // di CONFIG_SHEET_ID, dipakai supaya nama kecamatan/kabupaten yang

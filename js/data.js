@@ -1,6 +1,7 @@
 // Pemuatan data satuan pendidikan + indikator dari spreadsheet sumber,
-// dipakai bersama oleh index.html (js/app.js) dan peta.html (js/peta.js)
-// supaya logika deteksi kolom & penggabungan data tidak dobel.
+// dipakai bersama oleh bagian Rapor Satuan Pendidikan (js/app.js) dan
+// bagian Peta Sebaran Kecamatan (js/peta.js) di index.html, supaya logika
+// deteksi kolom & penggabungan data tidak dobel.
 (function () {
   "use strict";
 
@@ -56,9 +57,10 @@
     return Number.isNaN(n) ? null : n;
   }
 
-  // Data identitas+indikator sekolah sama persis dipakai index.html & peta.html
-  // — di-cache di sessionStorage supaya pindah antar 2 halaman itu tidak
-  // perlu menunggu fetch ulang ke Google Sheets selama masih segar.
+  // Data identitas+indikator sekolah sama persis dipakai bagian Peta &
+  // bagian Rapor di index.html (masing-masing manggil loadAll() sendiri)
+  // — di-cache di sessionStorage supaya panggilan kedua tidak perlu
+  // menunggu fetch ulang ke Google Sheets selama masih segar.
   const CACHE_KEY = "schoolData:" + CFG.SOURCE_SHEET_ID;
   const CACHE_TTL_MS = 10 * 60 * 1000; // 10 menit
 

@@ -22,7 +22,10 @@
   };
 
   function setStatus(msg, isError) {
-    const box = el("status-box");
+    // ID khusus (bukan "status-box") supaya tidak bentrok dengan status
+    // box halaman Rapor Satuan Pendidikan saat kedua bagian digabung di
+    // satu halaman (lihat index.html).
+    const box = el("peta-status-box");
     if (!msg) {
       box.hidden = true;
       return;
