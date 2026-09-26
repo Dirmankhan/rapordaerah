@@ -634,6 +634,71 @@
   }
 
   // -----------------------------------------------------------------------
+  // Export PNG (pustaka html2canvas dimuat lazy, hanya saat tombol diklik
+  // pertama kali — supaya tidak menambah beban muat halaman bagi pengguna
+  // yang tidak memakai fitur ini).
+  // -----------------------------------------------------------------------
+
+  let html2canvasLoadPromise = null;
+
+  function loadHtml2Canvas() {
+    if (window.html2canvas) return Promise.resolve();
+    if (!html2canvasLoadPromise) {
+      html2canvasLoadPromise = new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js";
+        script.onload = () => resolve();
+        script.onerror = () => {
+          html2canvasLoadPromise = null; // izinkan coba lagi di klik berikutnya
+          reject(new Error("Gagal memuat pustaka html2canvas dari CDN."));
+        };
+        document.head.appendChild(script);
+      });
+    }
+    return html2canvasLoadPromise;
+  }
+
+  /** Ekspor tampilan peta (#peta-map) sebagai berkas PNG yang diunduh
+   * langsung ke perangkat pengguna. Ubin peta dasar (OpenStreetMap) tidak
+   * mendukung CORS, jadi html2canvas otomatis melewatinya (bukan ikut
+   * membuat kanvas "tainted") — hasil ekspor tetap berisi warna wilayah
+   * kecamatan/kabupaten & label tooltip dgn latar putih. */
+  async function exportMapAsPng() {
+    const btn = el("peta-export-png");
+    if (!btn || btn.disabled) return;
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "Memproses...";
+    try {
+      await loadHtml2Canvas();
+      const mapEl = el("peta-map");
+      const canvas = await window.html2canvas(mapEl, {
+        useCORS: false,
+        allowTaint: false,
+        backgroundColor: "#ffffff",
+        logging: false,
+      });
+      const dataUrl = canvas.toDataURL("image/png");
+      const stamp = new Date()
+        .toISOString()
+        .slice(0, 19)
+        .replace(/[:T]/g, "-");
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = "peta-sebaran-kecamatan-" + stamp + ".png";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (err) {
+      console.error(err);
+      alert("Gagal mengekspor peta sebagai PNG: " + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  }
+
+  // -----------------------------------------------------------------------
   // Filter UI
   // -----------------------------------------------------------------------
 
@@ -694,6 +759,9 @@
 
     const toggleBtn = el("peta-toggle-tooltips");
     toggleBtn.addEventListener("click", () => setTooltipsVisible(!state.tooltipsVisible));
+
+    const exportBtn = el("peta-export-png");
+    exportBtn.addEventListener("click", exportMapAsPng);
   }
 
   // -----------------------------------------------------------------------
