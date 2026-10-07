@@ -66,49 +66,25 @@ window.DASHBOARD_CONFIG = {
 
   // --- Halaman Indikator SPM per Kabupaten/Kota (spm.html) ---------------
   //
-  // Sheet "spm" di CONFIG_SHEET_ID punya 2 bagian:
-  //
-  // 1) Tabel indikator x kabupaten/kota (SATU BARIS PER PASANGAN indikator+
-  //    kabupaten/kota, karena baris/kolom indikator yang sama bisa ada di
-  //    posisi sel yang BERBEDA di tiap file kabupaten/kota — tidak bisa
-  //    pakai 1 rujukan sel untuk semua kabupaten):
-  //      Kolom "No Indikator", "Nama Indikator"
-  //      Kolom "Wilayah"            -> nama kabupaten/kota baris ini berlaku
-  //                                    (harus sama persis dengan nama di
-  //                                    daftar kabupaten/kota, lihat poin 2)
-  //      Kolom "Label Capaian 2025" -> lokasi sel, format "NamaSheet!A1"
-  //      Kolom "Nilai Capaian 2025" -> lokasi sel, format "NamaSheet!A1"
-  //    Boleh belum lengkap: kabupaten/kota yang belum ada barisnya untuk
-  //    suatu indikator otomatis tampil "-" (Tidak Tersedia) di halaman,
-  //    bukan error.
-  //
-  // 2) Daftar kabupaten/kota (boleh di kolom mana pun, dipakai untuk isi
-  //    dropdown filter & mencari ID spreadsheet sumbernya):
-  //      Kolom "Kabupaten"    -> nama kabupaten/kota
-  //      Kolom "Sumber data"  -> judul spreadsheet sumber datanya (harus
-  //                              terdaftar di SPM_SOURCE_BY_TITLE di bawah)
+  // Sheet "spm" di CONFIG_SHEET_ID: SATU BARIS PER PASANGAN (kabupaten/kota,
+  // indikator), dengan nilai capaiannya sudah langsung berupa data di sheet
+  // ini sendiri (bukan rujukan sel ke spreadsheet kabupaten/kota lain lagi):
+  //   Kolom "Pemda"              -> nama kabupaten/kota baris ini berlaku;
+  //                                 dipakai jg utk isi dropdown filter
+  //                                 (diambil otomatis dari nilai unik di
+  //                                 kolom ini, urutan kemunculan pertama).
+  //   Kolom "No Indikator", "Nama Indikator"
+  //   Kolom "Label Capaian 2025" -> nilai label langsung (mis. "Baik"),
+  //                                 boleh kosong utk indikator yang memang
+  //                                 cuma berupa skor tanpa label (mis.
+  //                                 Kemampuan literasi/numerasi).
+  //   Kolom "Nilai Capaian 2025" -> nilai angka langsung (mis. "51,36").
+  // Boleh belum lengkap: kabupaten/kota yang belum ada barisnya untuk suatu
+  // indikator otomatis tampil "-" (Tidak Tersedia) di halaman, bukan error.
   //
   // Nama header dideteksi otomatis (tidak harus di kolom tertentu), asal
   // kata-katanya seperti di atas.
   SPM_SHEET_NAME: "spm",
-
-  // Karena sel J hanya berisi JUDUL file (bukan ID/URL), pemetaan judul ->
-  // ID spreadsheet Google Sheets harus dijaga manual di sini. Jika ada
-  // Kabupaten/Kota baru atau file sumbernya diganti (mis. tahun 2026),
-  // tambahkan/perbarui entri di bawah (cari ID lewat Drive, ambil dari
-  // bagian ".../d/<ID>/edit" pada URL spreadsheet).
-  SPM_SOURCE_BY_TITLE: {
-    "RAPOR-KAB-SUMBAWA-BARAT-DATA-2025": "1Ac3MSEGvNAvkNt6LFbhfeDhyNYC_-hIahWazLteqTcs",
-    "RAPOR-KAB-LOMBOK-UTARA-DATA-2025": "1MujUwJVORyF9tTmrY2lA2D65co3UUngkOXyhLtQMJd0",
-    "RAPOR-KAB-LOMBOK-TENGAH-DATA-2025": "1V9SRN_Ugb7xYecAtskXDwKEVXy_ww8c9AUAHwFM1Q-Y",
-    "RAPOR-KAB-LOMBOK-TIMUR-DATA-2025": "1WJjqnyOVMvFkhW2w40848a7vc3vY-oc2OskjVTNJhWU",
-    "RAPOR-KAB-LOMBOK-BARAT-DATA-2025": "1HKJDL-q42kaiQCq2m1aun-XlTBoWpJM1Rk0CRx6m2To",
-    "RAPOR-KOTA-MATARAM-DATA-2025": "1-P1F7V7Nt8kq95VCCZ4VXgiklezGvvOjoOidA9vh0NE",
-    "RAPOR-KAB-SUMBAWA-DATA-2025": "1s-BR8wFVN-XEKf75l530wEaXvTUDnsP1DqD2tpxyvJM",
-    "RAPOR-KAB-DOMPU-DATA-2025": "1oOgdSHJlm5aePfOKEonpa54b3Btd5TV2SVihwF56jUU",
-    "RAPOR-KAB-BIMA-DATA-2025": "1BbeJss6ihO6c5Pqtdnin20ZP2ETOQS4A-OmFqMlmTYY",
-    "RAPOR-KOTA-BIMA-DATA-2025": "1sjUTXBINeuj9qAMbUzX6xHxBY10Y5AvZ14RtOL5iMd0",
-  },
 
   // --- Bagian Peta Sebaran Kecamatan (index.html) -------------------------
   //

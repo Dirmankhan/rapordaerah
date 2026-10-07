@@ -121,45 +121,35 @@ kecamatan yang benar-benar berimbang.
 
 Filter dropdown **Kabupaten/Kota**; tabelnya menampilkan No Indikator, Nama
 Indikator, Nilai Capaian, dan Label Capaian (2025) untuk kabupaten/kota yang
-dipilih. Data diambil langsung dari spreadsheet Rapor Pendidikan
-kabupaten/kota itu sendiri (bukan dari sheet konfigurasi), berdasarkan
-rujukan sel yang disimpan di tab **`spm`** pada sheet konfigurasi.
+dipilih. Sejak sheet `spm` direstrukturisasi, seluruh data diambil langsung
+dari tab **`spm`** pada sheet konfigurasi itu sendiri — nilainya sudah
+tersimpan sebagai data biasa di sheet ini, **bukan lagi rujukan sel** ke
+spreadsheet Rapor Pendidikan kabupaten/kota masing-masing.
 
-**Penting:** rujukan sel Label/Nilai Capaian **berbeda-beda per
-kabupaten/kota** — indikator yang sama ("Kemampuan literasi SD" misalnya)
-bisa berada di baris yang berbeda di tiap file kabupaten/kota, karena
-masing-masing file dibuat terpisah. Karena itu sheet `spm` memakai format
-**satu baris per pasangan (indikator, kabupaten/kota)**, bukan satu rujukan
-yang dipakai untuk semua:
+Format sheet `spm`: **satu baris per pasangan (kabupaten/kota, indikator)**:
 
-| No Indikator | Nama Indikator | Wilayah | Label Capaian 2025 | Nilai Capaian 2025 |
+| Pemda | No Indikator | Nama Indikator | Label Capaian 2025 | Nilai Capaian 2025 |
 |---|---|---|---|---|
-| A.1.skor | Kemampuan literasi SD | Kabupaten Sumbawa Barat | `2. CAPAIAN KABKOT!E3625` | `2. CAPAIAN KABKOT!F3625` |
-| A.1.skor | Kemampuan literasi SD | Kabupaten Lombok Utara | `2. CAPAIAN KABKOT!E1198` | `2. CAPAIAN KABKOT!F1198` |
+| Kabupaten Sumbawa Barat | A.1.skor | Kemampuan literasi SD | | 51,36 |
+| Kabupaten Sumbawa Barat | B.10 | Angka Partisipasi Sekolah (5-6) | Baik | 97,83 |
+| Kabupaten Lombok Utara | A.1.skor | Kemampuan literasi SD | | 44,96 |
 | … | … | … | … | … |
 
-- Kolom **Wilayah** harus berisi nama kabupaten/kota persis sama dengan
-  nama di daftar kabupaten/kota (lihat di bawah).
-  isi rujukan selnya dengan cara membuka spreadsheet kabupaten/kota
-  tersebut, cari baris indikatornya di sheet `2. CAPAIAN KABKOT`, lalu
-  salin referensi sel Label Capaian 2025 dan Nilai Capaian 2025-nya
-  (format `NamaSheet!A1`).
+- Kolom **Pemda** berisi nama kabupaten/kota baris itu berlaku; dropdown
+  filter diisi otomatis dari nilai unik di kolom ini (urutan kemunculan
+  pertama di sheet), tidak perlu daftar kabupaten/kota terpisah lagi.
+- Kolom **Label Capaian 2025** boleh kosong untuk indikator yang memang
+  cuma berupa skor tanpa label kategori (mis. Kemampuan literasi/numerasi)
+  — nilainya tetap ditampilkan walau labelnya kosong.
 - Belum sempat isi semua kabupaten/kota sekaligus? Tidak apa — baris yang
-  belum ada untuk suatu (indikator, kabupaten/kota) otomatis tampil "-" di
+  belum ada untuk suatu (kabupaten/kota, indikator) otomatis tampil "-" di
   halaman, bukan error. Bisa dicicil.
-- Terpisah dari tabel di atas, sheet `spm` juga perlu daftar kabupaten/kota
-  (kolom **Kabupaten** + **Sumber data** = judul spreadsheet sumbernya) —
-  bagian ini sudah ada dan tidak berubah dari sebelumnya.
+- Sheet `spm` boleh punya kolom tambahan lain (mis. Nilai Capaian
+  2024/2023, Label Capaian 2022, Label Indikator) — kolom-kolom itu
+  dibiarkan apa adanya, halaman hanya membaca kolom yang disebut di atas.
 
-Karena kolom "Sumber data" hanya berisi **judul** file (bukan ID), pemetaan
-judul → ID spreadsheet disimpan manual di `js/config.js` →
-`SPM_SOURCE_BY_TITLE`. Saat ada kabupaten/kota baru atau file sumbernya
-berganti, perbarui/tambahkan entrinya di situ (cari ID lewat Drive, bagian
-`.../d/<ID>/edit` pada URL).
-
-Data tiap kabupaten/kota diambil sekali saat pertama dipilih di dropdown,
-lalu disimpan di memori (tidak diambil ulang saat bolak-balik pilihan dalam
-sesi yang sama).
+Nama header dideteksi otomatis dari teks-nya (tidak harus di kolom
+tertentu), lihat komentar `SPM_SHEET_NAME` di `js/config.js`.
 
 ## Struktur berkas
 
@@ -169,7 +159,7 @@ spm.html            Halaman Indikator SPM per Kabupaten/Kota
 data/ntb_kecamatan.geojson  Batas kecamatan se-NTB (disederhanakan)
 css/style.css       Tampilan bersama semua halaman (mendukung mode gelap otomatis)
 css/peta.css        Tampilan khusus peta (ukuran peta, legenda, tooltip)
-js/config.js        ID spreadsheet, daftar indikator, & peta sumber SPM per kabupaten
+js/config.js        ID spreadsheet, daftar indikator, & konfigurasi halaman SPM
 js/gviz.js          Pembaca Google Sheets via Google Visualization API
 js/shared.js        Util bersama: warna kategori, badge chip, escape HTML, deteksi SMK
 js/cache.js         Cache hasil fetch Google Sheets di sessionStorage (dipakai lintas halaman)
@@ -206,25 +196,13 @@ js/peta.js          Logika bagian Peta Sebaran Kecamatan (di index.html)
   `sessionStorage`, bukan fetch ganda ke Google Sheets.
 - **Cache antar-halaman/bagian** (`js/cache.js`): data hasil fetch dari
   Google Sheets yang berat (identitas+indikator sekolah dipakai bagian
-  Peta & Rapor di `index.html`; sheet referensi NPSN & sheet `spm` beserta
-  nilai per kabupaten) disimpan di `sessionStorage` selama 10 menit. Jadi
-  kalau pengguna membuka ulang `index.html` atau berpindah ke/dari
-  `spm.html` dalam tab yang sama, pemuatan berikutnya langsung pakai data
-  dari cache alih-alih menunggu fetch ulang — muncul status "Memuat data
-  dari cache...".
+  Peta & Rapor di `index.html`; sheet referensi NPSN & sheet `spm`)
+  disimpan di `sessionStorage` selama 10 menit. Jadi kalau pengguna membuka
+  ulang `index.html` atau berpindah ke/dari `spm.html` dalam tab yang sama,
+  pemuatan berikutnya langsung pakai data dari cache alih-alih menunggu
+  fetch ulang — muncul status "Memuat data dari cache...".
   Cache otomatis basi setelah 10 menit (data berikutnya fetch ulang dari
   Sheets) dan tidak dibagi antar tab/perangkat (sessionStorage per-tab).
   Kalau `sessionStorage` penuh/diblokir (mis. mode penyamaran), cache
   dilewati saja secara diam-diam — halaman tetap jalan seperti biasa
   (fetch langsung tiap kali).
-- Beberapa judul file sumber di Drive ternyata memiliki **duplikat** (judul
-  sama, ID berbeda, folder berbeda) — mis. `RAPOR-KAB-LOMBOK-UTARA-DATA-2025`
-  ada 2 salinan. `SPM_SOURCE_BY_TITLE` di `js/config.js` memilih salinan
-  dengan waktu modifikasi terbaru di folder yang tampak aktif dipakai. Jika
-  ternyata salah pilih, perbarui ID-nya secara manual.
-- Beberapa baris indikator di sheet `spm` (kolom C/D, mis. B.10–D.10 SD)
-  saat ini merujuk ke sel yang sama persis (`E2214`/`F2214`), kemungkinan
-  salah isi/copy-paste saat sheet dibuat. Ini bukan bug di kode — dashboard
-  membaca apa adanya dari sheet. Mohon cek & perbaiki rujukan selnya di
-  sheet `spm` bila perlu; halaman akan otomatis menampilkan data yang benar
-  begitu diperbaiki.
