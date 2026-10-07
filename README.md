@@ -120,11 +120,12 @@ kecamatan yang benar-benar berimbang.
 ### Halaman "Indikator SPM Kab./Kota" (`spm.html`)
 
 Filter dropdown **Kabupaten/Kota**; tabelnya menampilkan No Indikator, Nama
-Indikator, Nilai Capaian, dan Label Capaian (2025) untuk kabupaten/kota yang
-dipilih. Sejak sheet `spm` direstrukturisasi, seluruh data diambil langsung
-dari tab **`spm`** pada sheet konfigurasi itu sendiri — nilainya sudah
-tersimpan sebagai data biasa di sheet ini, **bukan lagi rujukan sel** ke
-spreadsheet Rapor Pendidikan kabupaten/kota masing-masing.
+Indikator, Nilai Capaian tahun **2022 s.d. 2025**, dan Label Capaian 2025
+untuk kabupaten/kota yang dipilih. Sejak sheet `spm` direstrukturisasi,
+seluruh data diambil langsung dari tab **`spm`** pada sheet konfigurasi itu
+sendiri — nilainya sudah tersimpan sebagai data biasa di sheet ini,
+**bukan lagi rujukan sel** ke spreadsheet Rapor Pendidikan kabupaten/kota
+masing-masing.
 
 Format sheet `spm`: **satu baris per pasangan (kabupaten/kota, indikator)**:
 
@@ -141,12 +142,18 @@ Format sheet `spm`: **satu baris per pasangan (kabupaten/kota, indikator)**:
 - Kolom **Label Capaian 2025** boleh kosong untuk indikator yang memang
   cuma berupa skor tanpa label kategori (mis. Kemampuan literasi/numerasi)
   — nilainya tetap ditampilkan walau labelnya kosong.
+- Kolom **Nilai Capaian 2024/2023** dan **"Label Capaian 2022"** (di sheet
+  sumber header-nya tertulis begitu walau isinya angka/nilai, bukan label
+  kategori) ditampilkan sebagai kolom tahun 2024/2023/2022 di tabel, di
+  samping kolom 2025. Ketiganya opsional — kalau salah satu tidak ditemukan
+  di header sheet, kolomnya tetap tampil berisi "-", tidak menggagalkan
+  pemuatan seluruh halaman.
 - Belum sempat isi semua kabupaten/kota sekaligus? Tidak apa — baris yang
   belum ada untuk suatu (kabupaten/kota, indikator) otomatis tampil "-" di
   halaman, bukan error. Bisa dicicil.
-- Sheet `spm` boleh punya kolom tambahan lain (mis. Nilai Capaian
-  2024/2023, Label Capaian 2022, Label Indikator) — kolom-kolom itu
-  dibiarkan apa adanya, halaman hanya membaca kolom yang disebut di atas.
+- Sheet `spm` boleh punya kolom tambahan lain (mis. Label Indikator) —
+  kolom itu dibiarkan apa adanya, halaman hanya membaca kolom yang disebut
+  di atas.
 
 Nama header dideteksi otomatis dari teks-nya (tidak harus di kolom
 tertentu), lihat komentar `SPM_SHEET_NAME` di `js/config.js`.

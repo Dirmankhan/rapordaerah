@@ -57,6 +57,16 @@
     for (const [key, i] of Object.entries(idx)) {
       if (i === -1) throw new Error('Kolom "' + key + '" tidak ditemukan di header sheet "' + CFG.SPM_SHEET_NAME + '".');
     }
+    // Kolom capaian tahun-tahun sebelumnya (2022-2024) bersifat opsional —
+    // kalau tidak ketemu, kolomnya tetap ditampilkan tapi berisi "-", tidak
+    // menggagalkan pemuatan seluruh halaman. Kolom 2022 di sheet sumber
+    // header-nya tertulis "Label Capaian 2022" walau isinya angka (nilai),
+    // jadi dicocokkan longgar lewat tahunnya saja.
+    const idxHist = {
+      nilai2024: findCol(header, /capaian 2024/),
+      nilai2023: findCol(header, /capaian 2023/),
+      nilai2022: findCol(header, /capaian 2022/),
+    };
 
     const rows = [];
     const indicatorOrder = [];
@@ -75,6 +85,9 @@
         nama,
         label: row[idx.label] ?? null,
         nilai: row[idx.nilai] ?? null,
+        nilai2024: idxHist.nilai2024 >= 0 ? row[idxHist.nilai2024] ?? null : null,
+        nilai2023: idxHist.nilai2023 >= 0 ? row[idxHist.nilai2023] ?? null : null,
+        nilai2022: idxHist.nilai2022 >= 0 ? row[idxHist.nilai2022] ?? null : null,
       });
 
       const key = indicatorKey(no, nama);
@@ -116,18 +129,31 @@
       tdNama.className = "col-truncate";
       tdNama.textContent = ind.nama;
       tdNama.title = ind.nama;
+      const td2022 = document.createElement("td");
+      td2022.className = "col-indicator";
+      const td2023 = document.createElement("td");
+      td2023.className = "col-indicator";
+      const td2024 = document.createElement("td");
+      td2024.className = "col-indicator";
       const tdNilai = document.createElement("td");
+      tdNilai.className = "col-indicator";
       const tdLabel = document.createElement("td");
       tdLabel.className = "col-indicator";
 
       // Nilai & label ditampilkan independen: sebagian indikator (mis.
       // Kemampuan literasi/numerasi) memang cuma berupa skor tanpa label
       // kategori, jadi label kosong tidak berarti nilainya ikut kosong.
+      td2022.textContent = !r || isBlank(r.nilai2022) ? "-" : r.nilai2022;
+      td2023.textContent = !r || isBlank(r.nilai2023) ? "-" : r.nilai2023;
+      td2024.textContent = !r || isBlank(r.nilai2024) ? "-" : r.nilai2024;
       tdNilai.textContent = !r || isBlank(r.nilai) ? "-" : r.nilai;
       tdLabel.innerHTML = !r || isBlank(r.label) ? "<span class='chip chip-muted'>-</span>" : chipHtml(r.label);
 
       tr.appendChild(tdNo);
       tr.appendChild(tdNama);
+      tr.appendChild(td2022);
+      tr.appendChild(td2023);
+      tr.appendChild(td2024);
       tr.appendChild(tdNilai);
       tr.appendChild(tdLabel);
       tbody.appendChild(tr);
