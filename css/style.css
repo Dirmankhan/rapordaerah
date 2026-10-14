@@ -10,6 +10,16 @@
   --accent: #2a78d6;
   --good: #0ca30c;
   --critical: #d03b3b;
+  /* Palet kategorikal (urutan tetap, lihat skill dataviz) — dipakai utk
+     membedakan beberapa indikator sekaligus dalam satu grafik garis. */
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --series-4: #eda100;
+  --series-5: #e87ba4;
+  --series-6: #008300;
+  --series-7: #6250d6;
+  --series-8: #e34948;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -25,6 +35,14 @@
     --accent: #3987e5;
     --good: #0ca30c;
     --critical: #e66767;
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+    --series-4: #c98500;
+    --series-5: #d55181;
+    --series-6: #008300;
+    --series-7: #9085e9;
+    --series-8: #e66767;
   }
 }
 
@@ -285,15 +303,22 @@ body {
   font-size: 0.8rem;
 }
 
-/* Grafik ringkasan per kelompok indikator (spm.html): small multiples,
-   satu seri per kartu (garis + titik tahun 2022-2025) — identitas tiap
-   kelompok datang dari judul kartu, bukan dari warna, jadi semua kartu
-   sengaja memakai satu warna seri yang sama (var(--accent)). */
+/* Grafik ringkasan per kelompok indikator (spm.html): tiap kartu = satu
+   kelompok, tiap garis di dalamnya = satu indikator anggota kelompok itu
+   (warna kategorikal per indikator, urutan tetap var(--series-1..8)).
+   Dipaksa 2 kartu per baris (bukan auto-fit) supaya grafiknya cukup besar
+   utk memuat label nilai di tiap titik tahun; turun ke 1 kolom di layar
+   sempit. */
 .spm-group-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 16px;
+  grid-template-columns: 1fr;
+  gap: 20px;
   margin-top: 10px;
+}
+@media (min-width: 720px) {
+  .spm-group-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 .spm-group-card h3 {
   margin: 0 0 6px;
@@ -311,11 +336,10 @@ body {
 }
 .spm-chart-axis-label {
   fill: var(--text-muted);
-  font-size: 9px;
+  font-size: 10px;
 }
 .spm-chart-line {
   fill: none;
-  stroke: var(--accent);
   stroke-width: 2;
   stroke-linejoin: round;
   stroke-linecap: round;
@@ -323,27 +347,20 @@ body {
 .spm-chart-dot-ring {
   fill: var(--surface-1);
 }
-.spm-chart-dot {
-  fill: var(--accent);
-}
 .spm-chart-value-label {
-  fill: var(--text-primary);
-  font-size: 10px;
+  fill: var(--text-secondary);
+  font-size: 9px;
   font-weight: 600;
 }
 .spm-chart-hit {
   fill: transparent;
   cursor: pointer;
 }
-.spm-chart-hit:hover ~ .spm-chart-dot,
-.spm-chart-hit:focus-visible ~ .spm-chart-dot {
-  r: 4.5;
-}
 .spm-chart-hit:focus-visible {
   outline: none;
-  stroke: var(--accent);
+  stroke: var(--text-primary);
   stroke-width: 1.5;
-  fill: rgba(42, 120, 214, 0.12);
+  fill: var(--border);
 }
 .spm-chart-tooltip {
   position: absolute;
@@ -354,14 +371,45 @@ body {
   border-radius: 6px;
   padding: 4px 8px;
   font-size: 0.78rem;
-  font-weight: 600;
   white-space: nowrap;
   pointer-events: none;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
   z-index: 50;
 }
+.spm-chart-tooltip strong {
+  font-weight: 700;
+}
 .spm-chart-tooltip[hidden] {
   display: none;
+}
+
+/* Legenda garis (bukan kotak) di bawah tiap grafik multi-seri. */
+.spm-chart-legend {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+.spm-chart-legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+}
+.spm-chart-legend-key {
+  width: 16px;
+  height: 2px;
+  border-radius: 1px;
+  flex: none;
+}
+.spm-chart-legend li span.spm-chart-legend-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .table-scroll {
