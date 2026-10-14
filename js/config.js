@@ -86,6 +86,17 @@ window.DASHBOARD_CONFIG = {
   // kata-katanya seperti di atas.
   SPM_SHEET_NAME: "spm",
 
+  // Pengelompokan indikator SPM utk grafik ringkasan di spm.html: tiap
+  // indikator (kolom "Nama Indikator") dicocokkan ke grup PERTAMA yang
+  // regex-nya match (tidak case-sensitive). Indikator yang tidak cocok ke
+  // grup mana pun dilewati saja dari grafik (tetap tampil di tabel detail).
+  SPM_INDICATOR_GROUPS: [
+    { label: "Kualitas Hasil Belajar", match: /literasi|numerasi/i },
+    { label: "Angka Partisipasi Sekolah", match: /angka partisipasi sekolah/i },
+    { label: "Iklim Sekolah", match: /iklim/i },
+    { label: "Khusus Indikator PAUD", match: /paud/i },
+  ],
+
   // --- Bagian Peta Sebaran Kecamatan (index.html) -------------------------
   //
   // Sheet referensi NPSN (data Dapodik: npsn, kecamatan, kabupaten, dst.)

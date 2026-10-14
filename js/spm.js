@@ -109,6 +109,13 @@
     return v === null || v === undefined || v === "";
   }
 
+  function toNumber(v) {
+    if (isBlank(v)) return null;
+    if (typeof v === "number") return v;
+    const n = parseFloat(String(v).trim().replace(",", "."));
+    return Number.isNaN(n) ? null : n;
+  }
+
   function renderTable(nama) {
     const table = el("spm-table");
     const tbody = el("spm-body");
@@ -162,8 +169,177 @@
     table.hidden = false;
   }
 
+  const YEARS = [2022, 2023, 2024, 2025];
+  const YEAR_FIELD = { 2022: "nilai2022", 2023: "nilai2023", 2024: "nilai2024", 2025: "nilai" };
+
+  /** Rata-rata Nilai Capaian per tahun utk satu grup indikator, dari baris
+   * kabupaten/kota terpilih yang nama indikatornya cocok dgn `group.match`.
+   * Tahun tanpa nilai numerik sama sekali (semua baris kosong/non-angka)
+   * menghasilkan `null` pada titik itu — tidak dipaksakan jadi 0. */
+  function computeGroupSeries(nama, group) {
+    const matching = state.rows.filter((r) => r.pemda === nama && group.match.test(r.nama));
+    return YEARS.map((year) => {
+      const field = YEAR_FIELD[year];
+      const values = matching.map((r) => toNumber(r[field])).filter((v) => v !== null);
+      if (values.length === 0) return null;
+      return values.reduce((a, b) => a + b, 0) / values.length;
+    });
+  }
+
+  const SVG_NS = "http://www.w3.org/2000/svg";
+  function svgEl(tag, attrs) {
+    const node = document.createElementNS(SVG_NS, tag);
+    for (const [k, v] of Object.entries(attrs || {})) node.setAttribute(k, v);
+    return node;
+  }
+
+  /** Grafik garis ringkas (satu seri) utk tren 2022-2025 satu grup indikator.
+   * Plot area 280x120, pita sumbu-x ~24px di bawahnya utk label tahun —
+   * tinggi kontainer mengikuti ini (bukan tinggi tetap yg memotong label). */
+  function buildGroupChart(label, series) {
+    const card = document.createElement("div");
+    card.className = "spm-group-card";
+
+    const h3 = document.createElement("h3");
+    h3.textContent = label;
+    card.appendChild(h3);
+
+    const points = series
+      .map((v, i) => ({ year: YEARS[i], value: v }))
+      .filter((p) => p.value !== null);
+
+    if (points.length === 0) {
+      const empty = document.createElement("p");
+      empty.className = "muted small";
+      empty.textContent = "Data tidak tersedia untuk kelompok ini.";
+      card.appendChild(empty);
+      return card;
+    }
+
+    const W = 280;
+    const PLOT_H = 110;
+    const PAD_X = 12;
+    const AXIS_H = 22;
+    const values = points.map((p) => p.value);
+    const vMin = Math.min(...values);
+    const vMax = Math.max(...values);
+    const vPad = vMax === vMin ? Math.max(1, vMax * 0.1) : (vMax - vMin) * 0.15;
+    const yLo = vMin - vPad;
+    const yHi = vMax + vPad;
+    const xStep = YEARS.length > 1 ? (W - PAD_X * 2) / (YEARS.length - 1) : 0;
+
+    const xOf = (i) => PAD_X + i * xStep;
+    const yOf = (v) => PLOT_H - ((v - yLo) / (yHi - yLo)) * PLOT_H;
+
+    const svg = svgEl("svg", {
+      viewBox: "0 0 " + W + " " + (PLOT_H + AXIS_H),
+      class: "spm-group-svg",
+      role: "img",
+      "aria-label": label + ": tren Nilai Capaian 2022 sampai 2025",
+    });
+
+    // Garis dasar (baseline) hairline, satu step dari warna surface.
+    svg.appendChild(
+      svgEl("line", { x1: PAD_X, y1: PLOT_H, x2: W - PAD_X, y2: PLOT_H, class: "spm-chart-baseline" })
+    );
+
+    // Label tahun di sumbu-x (ink muted), hanya utk tahun yg datanya ada.
+    YEARS.forEach((year, i) => {
+      const t = svgEl("text", {
+        x: xOf(i),
+        y: PLOT_H + 15,
+        "text-anchor": i === 0 ? "start" : i === YEARS.length - 1 ? "end" : "middle",
+        class: "spm-chart-axis-label",
+      });
+      t.textContent = String(year);
+      svg.appendChild(t);
+    });
+
+    // Garis seri (hanya menghubungkan titik yg datanya ada — melompati tahun kosong).
+    let pathD = "";
+    series.forEach((v, i) => {
+      if (v === null) return;
+      pathD += (pathD ? "L" : "M") + xOf(i).toFixed(1) + "," + yOf(v).toFixed(1);
+    });
+    svg.appendChild(svgEl("path", { d: pathD, class: "spm-chart-line" }));
+
+    const lastIdx = series.map((v, i) => (v !== null ? i : -1)).filter((i) => i >= 0).pop();
+
+    series.forEach((v, i) => {
+      if (v === null) return;
+      const cx = xOf(i);
+      const cy = yOf(v);
+      const year = YEARS[i];
+      const valueText = Number.isInteger(v) ? String(v) : v.toFixed(2).replace(".", ",");
+
+      // Target hover/fokus (lebih besar dari titik yg terlihat, >=24px).
+      const hit = svgEl("circle", {
+        cx,
+        cy,
+        r: 12,
+        class: "spm-chart-hit",
+        tabindex: "0",
+        role: "img",
+        "aria-label": "Tahun " + year + ": " + valueText,
+      });
+      svg.appendChild(hit);
+
+      // Titik terlihat + cincin warna surface (spacer antara titik & garis).
+      svg.appendChild(svgEl("circle", { cx, cy, r: 5, class: "spm-chart-dot-ring" }));
+      svg.appendChild(svgEl("circle", { cx, cy, r: 3.5, class: "spm-chart-dot" }));
+
+      if (i === lastIdx) {
+        const label2025 = svgEl("text", {
+          x: Math.min(cx, W - PAD_X - 2),
+          y: Math.max(cy - 10, 10),
+          "text-anchor": "end",
+          class: "spm-chart-value-label",
+        });
+        label2025.textContent = valueText;
+        svg.appendChild(label2025);
+      }
+
+      const tooltip = "Tahun " + year + ": " + valueText;
+      hit.addEventListener("pointerenter", () => showChartTooltip(hit, tooltip));
+      hit.addEventListener("focus", () => showChartTooltip(hit, tooltip));
+      hit.addEventListener("pointerleave", hideChartTooltip);
+      hit.addEventListener("blur", hideChartTooltip);
+    });
+
+    card.appendChild(svg);
+    return card;
+  }
+
+  let tooltipEl = null;
+  function showChartTooltip(targetCircle, text) {
+    if (!tooltipEl) {
+      tooltipEl = document.createElement("div");
+      tooltipEl.className = "spm-chart-tooltip";
+      document.body.appendChild(tooltipEl);
+    }
+    tooltipEl.textContent = text;
+    const rect = targetCircle.getBoundingClientRect();
+    tooltipEl.style.left = rect.left + rect.width / 2 + window.scrollX + "px";
+    tooltipEl.style.top = rect.top + window.scrollY - 8 + "px";
+    tooltipEl.hidden = false;
+  }
+  function hideChartTooltip() {
+    if (tooltipEl) tooltipEl.hidden = true;
+  }
+
+  function renderGroupCharts(nama) {
+    const container = el("spm-groups");
+    container.innerHTML = "";
+    const groups = CFG.SPM_INDICATOR_GROUPS || [];
+    for (const group of groups) {
+      const series = computeGroupSeries(nama, group);
+      container.appendChild(buildGroupChart(group.label, series));
+    }
+  }
+
   function showKabupaten(nama) {
     renderTable(nama);
+    renderGroupCharts(nama);
     setStatus("");
   }
 

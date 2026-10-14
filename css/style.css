@@ -285,6 +285,85 @@ body {
   font-size: 0.8rem;
 }
 
+/* Grafik ringkasan per kelompok indikator (spm.html): small multiples,
+   satu seri per kartu (garis + titik tahun 2022-2025) — identitas tiap
+   kelompok datang dari judul kartu, bukan dari warna, jadi semua kartu
+   sengaja memakai satu warna seri yang sama (var(--accent)). */
+.spm-group-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin-top: 10px;
+}
+.spm-group-card h3 {
+  margin: 0 0 6px;
+  font-size: 0.95rem;
+}
+.spm-group-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  overflow: visible;
+}
+.spm-chart-baseline {
+  stroke: var(--gridline);
+  stroke-width: 1;
+}
+.spm-chart-axis-label {
+  fill: var(--text-muted);
+  font-size: 9px;
+}
+.spm-chart-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.spm-chart-dot-ring {
+  fill: var(--surface-1);
+}
+.spm-chart-dot {
+  fill: var(--accent);
+}
+.spm-chart-value-label {
+  fill: var(--text-primary);
+  font-size: 10px;
+  font-weight: 600;
+}
+.spm-chart-hit {
+  fill: transparent;
+  cursor: pointer;
+}
+.spm-chart-hit:hover ~ .spm-chart-dot,
+.spm-chart-hit:focus-visible ~ .spm-chart-dot {
+  r: 4.5;
+}
+.spm-chart-hit:focus-visible {
+  outline: none;
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  fill: rgba(42, 120, 214, 0.12);
+}
+.spm-chart-tooltip {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  background: var(--surface-1);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  z-index: 50;
+}
+.spm-chart-tooltip[hidden] {
+  display: none;
+}
+
 .table-scroll {
   overflow-x: auto;
 }

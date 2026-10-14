@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Indikator SPM per Kabupaten/Kota</title>
-  <link rel="stylesheet" href="css/style.css?v=38" />
+  <link rel="stylesheet" href="css/style.css?v=39" />
 </head>
 <body>
   <header class="app-header">
@@ -30,6 +30,12 @@
       </div>
     </section>
 
+    <section class="panel" aria-label="Ringkasan per kelompok indikator">
+      <h2>Ringkasan per Kelompok Indikator</h2>
+      <p class="muted small">Rata-rata Nilai Capaian tiap kelompok indikator, tahun 2022&ndash;2025.</p>
+      <div id="spm-groups" class="spm-group-grid"></div>
+    </section>
+
     <section class="panel" aria-label="Indikator SPM">
       <h2>Indikator SPM</h2>
       <div class="table-scroll">
@@ -38,11 +44,11 @@
             <tr>
               <th>No</th>
               <th class="col-truncate">Nama Indikator</th>
-              <th>2022</th>
-              <th>2023</th>
-              <th>2024</th>
-              <th>2025</th>
-              <th>Label Capaian 2025</th>
+              <th class="col-indicator">2022</th>
+              <th class="col-indicator">2023</th>
+              <th class="col-indicator">2024</th>
+              <th class="col-indicator">2025</th>
+              <th class="col-indicator">Label Capaian 2025</th>
             </tr>
           </thead>
           <tbody id="spm-body"></tbody>
@@ -59,10 +65,10 @@
     </p>
   </footer>
 
-  <script src="js/config.js?v=38"></script>
-  <script src="js/gviz.js?v=38"></script>
-  <script src="js/shared.js?v=38"></script>
-  <script src="js/cache.js?v=38"></script>
-  <script src="js/spm.js?v=38"></script>
+  <script src="js/config.js?v=39"></script>
+  <script src="js/gviz.js?v=39"></script>
+  <script src="js/shared.js?v=39"></script>
+  <script src="js/cache.js?v=39"></script>
+  <script src="js/spm.js?v=39"></script>
 </body>
 </html>
