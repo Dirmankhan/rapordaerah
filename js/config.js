@@ -40,15 +40,17 @@ window.DASHBOARD_CONFIG = {
   // Kolom identitas yang ditampilkan sebagai kolom di tabel detail
   // (terpisah dari FILTER_FIELDS — Jenis & Kecamatan tetap bisa difilter
   // walau tidak ditampilkan sebagai kolom tabel). `key` harus sama dengan
-  // properti objek sekolah di app.js (lihat `loadAll`).
-  // Lebar Nama/Kab.Kota dikecilkan dari 26/10 supaya kolom indikator (yang
-  // skornya kini juga membawa ikon tren naik/turun di sebelah chip) cukup
-  // lega — keduanya tetap truncate+tooltip jika nama/nama kab terpotong.
+  // properti objek sekolah di app.js (lihat `loadAll`). `truncate` memotong
+  // teks panjang dengan "..." + tooltip; `center` menengahkan isi sel
+  // (dipakai utk Status yang nilainya cuma 1 huruf, lihat abbreviateStatus
+  // di app.js). Kab./Kota ditaruh sebelum Status (bukan di ujung) & diberi
+  // lebar lebih supaya nama kabupaten/kota tidak terpotong, karena header
+  // & nilai Status sekarang disingkat jadi sangat sempit ("STS"/"N"/"S").
   TABLE_COLUMNS: [
     { key: "npsn", label: "NPSN", width: 6 },
     { key: "nama", label: "Nama Satuan Pendidikan", width: 18, truncate: true },
-    { key: "status", label: "Status", width: 6 },
-    { key: "kabkota", label: "Kab./Kota", width: 7, truncate: true },
+    { key: "kabkota", label: "Kab./Kota", width: 10, truncate: true },
+    { key: "status", label: "STS", width: 3, center: true },
   ],
 
   // Indikator yang ditampilkan di dashboard: key harus sama dengan nama

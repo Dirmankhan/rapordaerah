@@ -160,11 +160,6 @@ body {
   font-size: 0.9rem;
   width: 100%;
 }
-.search-item {
-  max-width: 360px;
-  margin: 12px 0 16px;
-}
-
 /* Baris filter Capaian/Perubahan di <thead>, di atas kolom indikator
    masing-masing (lihat js/app.js renderTableHead). Bukan sticky seperti
    baris kode indikator di bawahnya, supaya tidak tumpang tindih saat
@@ -179,11 +174,20 @@ body {
      kelihatan saat dibuka. */
   overflow: visible;
 }
-.filter-row-label {
-  text-align: left !important;
-  font-size: 0.68rem;
-  font-weight: 600;
-  color: var(--text-secondary);
+/* Sel gabungan (rowspan 2) di awal baris Capaian berisi kotak pencarian
+   NPSN/Nama — sejajar vertikal dengan baris Capaian+Perubahan. */
+.search-cell {
+  vertical-align: middle;
+}
+.table-search-input {
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--gridline);
+  background: var(--surface-1);
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  font-weight: 400;
 }
 .multiselect-compact .multiselect-btn {
   padding: 3px 4px;
@@ -547,6 +551,9 @@ tr.row-expanded {
   vertical-align: middle;
 }
 .col-indicator {
+  text-align: center;
+}
+.col-center {
   text-align: center;
 }
 #spm-table tbody tr {

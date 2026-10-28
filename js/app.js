@@ -17,7 +17,8 @@
   const state = {
     identityHeader: CFG.IDENTITY_FIELDS,
     schools: [], // hasil merge lengkap
-    filtered: [],
+    filtered: [], // hasil filter umum (Kab/Kota, Kecamatan, Jenis, Status, Cari) -> dipakai Ringkasan & result-count
+    tableRows: [], // state.filtered, disaring lagi oleh filter Capaian/Perubahan per indikator -> khusus tabel Detail
     filterOptions: {}, // field -> sorted unique values
     filters: { indicatorFilters: {} }, // field -> selected value ("" = semua); indicatorFilters: code -> { capaian: [], perubahan: [] }
     page: 1,
@@ -27,6 +28,15 @@
 
   function isSMK(jenis) {
     return /smk/i.test(String(jenis || ""));
+  }
+
+  /** "Negeri" -> "N", "Swasta" -> "S" (ringkas kolom Status di tabel
+   * Detail Satuan Pendidikan); nilai lain ditampilkan apa adanya. */
+  function abbreviateStatus(val) {
+    const v = String(val || "").trim().toLowerCase();
+    if (v === "negeri") return "N";
+    if (v === "swasta") return "S";
+    return val;
   }
 
   const el = (id) => document.getElementById(id);
@@ -98,9 +108,12 @@
     return state.filters.indicatorFilters[code];
   }
 
+  /** Filter umum (Kab/Kota, Kecamatan, Jenis, Status, kotak Cari) ->
+   * state.filtered, dipakai Ringkasan Capaian Indikator Prioritas &
+   * result-count. Filter Capaian/Perubahan per indikator SENGAJA tidak
+   * ikut di sini — lihat computeTableRows. */
   function applyFilters() {
     const search = (state.filters.search || "").trim().toLowerCase();
-    const indicatorFilters = state.filters.indicatorFilters || {};
     state.filtered = state.schools.filter((s) => {
       for (const { field, multi } of CFG.FILTER_FIELDS) {
         const key = fieldKeyFor(field);
@@ -115,9 +128,17 @@
         const hay = (String(s.npsn) + " " + s.nama).toLowerCase();
         if (!hay.includes(search)) return false;
       }
-      // Filter Capaian/Perubahan per indikator: tiap indikator yang punya
-      // filter capaian dan/atau perubahan terisi harus cocok (AND di antara
-      // semua indikator yang difilter).
+      return true;
+    });
+  }
+
+  /** state.filtered, disaring lagi oleh filter Capaian/Perubahan per
+   * indikator -> state.tableRows, khusus dipakai tabel Detail Satuan
+   * Pendidikan (tidak mempengaruhi Ringkasan Capaian Indikator Prioritas
+   * ataupun result-count, yang tetap berdasarkan state.filtered). */
+  function computeTableRows() {
+    const indicatorFilters = state.filters.indicatorFilters || {};
+    state.tableRows = state.filtered.filter((s) => {
       for (const ind of CFG.INDICATORS) {
         const fs = indicatorFilters[ind.code];
         if (!fs || (fs.capaian.length === 0 && fs.perubahan.length === 0)) continue;
@@ -131,8 +152,6 @@
       }
       return true;
     });
-    state.page = 1;
-    state.expandedIdx = null;
   }
 
   // ---------------------------------------------------------------------
@@ -446,13 +465,40 @@
   // Render: tabel detail
   // ---------------------------------------------------------------------
 
+  /** Kotak pencarian NPSN/Nama, dibuat SEKALI dan dipakai ulang (bukan
+   * dibangun lagi tiap renderTableHead) supaya tidak kehilangan fokus saat
+   * sedang diketik — lihat pemakaiannya di renderTableHead. Perubahan
+   * nilainya tetap memicu refresh() penuh (ikut mempengaruhi Ringkasan &
+   * result-count, sama seperti filter umum lainnya). */
+  let searchInputEl = null;
+  function getSearchInput() {
+    if (searchInputEl) return searchInputEl;
+    searchInputEl = document.createElement("input");
+    searchInputEl.type = "text";
+    searchInputEl.className = "table-search-input";
+    searchInputEl.placeholder = "Cari NPSN atau nama sekolah...";
+    let searchTimer = null;
+    searchInputEl.addEventListener("input", (e) => {
+      clearTimeout(searchTimer);
+      const val = e.target.value;
+      searchTimer = setTimeout(() => {
+        state.filters.search = val;
+        refresh();
+      }, 150);
+    });
+    return searchInputEl;
+  }
+
   /** Bangun ulang <colgroup> + 3 baris <thead>: baris filter Capaian, baris
    * filter Perubahan, lalu baris kode indikator — ketiganya berbagi
    * <colgroup> yang sama supaya filter tiap indikator otomatis sejajar
    * persis di atas kolomnya sendiri (lebarnya pas sama dengan kotak kode
-   * indikator, lihat .multiselect-compact). Kolom indikator smkOnly
-   * disembunyikan kalau tidak ada satuan pendidikan jenjang SMK di hasil
-   * filter saat ini. */
+   * indikator, lihat .multiselect-compact). Kolom identitas (NPSN s.d.
+   * Status) digabung jadi satu sel (rowspan 2) berisi kotak pencarian,
+   * sejajar dengan kedua baris filter itu — makanya cuma dibangun di baris
+   * Capaian, baris Perubahan tidak perlu sel identitas sama sekali. Kolom
+   * indikator smkOnly disembunyikan kalau tidak ada satuan pendidikan
+   * jenjang SMK di hasil filter saat ini. */
   function renderTableHead() {
     const hasSMK = state.filtered.some((s) => isSMK(s.jenis));
     state.visibleIndicators = CFG.INDICATORS.filter((ind) => !ind.smkOnly || hasSMK);
@@ -462,39 +508,37 @@
     const perubahanRow = el("table-filter-perubahan-row");
     const headRow = el("table-head-row");
     colgroup.innerHTML = "";
-    capaianRow.innerHTML = "";
-    perubahanRow.innerHTML = "";
     headRow.innerHTML = "";
+    // Hanya sel kolom indikator yang dibongkar ulang tiap render — sel
+    // pencarian di awal baris Capaian dipertahankan (lihat di bawah).
+    Array.from(capaianRow.querySelectorAll("th.col-indicator")).forEach((th) => th.remove());
+    perubahanRow.innerHTML = "";
 
     const identityWidthTotal = CFG.TABLE_COLUMNS.reduce((sum, c) => sum + c.width, 0);
     const indicatorWidth = state.visibleIndicators.length
       ? (100 - identityWidthTotal) / state.visibleIndicators.length
       : 0;
 
-    CFG.TABLE_COLUMNS.forEach((col, i) => {
+    CFG.TABLE_COLUMNS.forEach((col) => {
       const c = document.createElement("col");
       c.style.width = col.width + "%";
       colgroup.appendChild(c);
 
-      // Label "Capaian"/"Perubahan" ditaruh di kolom Nama Satuan Pendidikan
-      // (kolom identitas paling lebar) supaya kedua baris filter ini jelas
-      // maksudnya, bukan sekadar baris kosong.
-      const capTh = document.createElement("th");
-      const perTh = document.createElement("th");
-      if (i === 1) {
-        capTh.textContent = "Capaian";
-        perTh.textContent = "Perubahan";
-        capTh.className = "filter-row-label";
-        perTh.className = "filter-row-label";
-      }
-      capaianRow.appendChild(capTh);
-      perubahanRow.appendChild(perTh);
-
       const th = document.createElement("th");
       th.textContent = col.label;
       if (col.truncate) th.className = "col-truncate";
+      if (col.center) th.className = "col-center";
       headRow.appendChild(th);
     });
+
+    if (!capaianRow.querySelector(".search-cell")) {
+      const searchTh = document.createElement("th");
+      searchTh.className = "search-cell";
+      searchTh.rowSpan = 2;
+      searchTh.colSpan = CFG.TABLE_COLUMNS.length;
+      searchTh.appendChild(getSearchInput());
+      capaianRow.insertBefore(searchTh, capaianRow.firstChild);
+    }
 
     const capaianByIndicator = state.filterOptions.capaianByIndicator || {};
     for (const ind of state.visibleIndicators) {
@@ -507,12 +551,12 @@
       const capTh = document.createElement("th");
       capTh.className = "col-indicator";
       const capOptions = (capaianByIndicator[ind.code] || []).map((lbl) => ({ value: lbl, label: lbl }));
-      capTh.appendChild(buildValueMultiSelect(capOptions, fs.capaian, refresh, { compact: true }));
+      capTh.appendChild(buildValueMultiSelect(capOptions, fs.capaian, refreshTableOnly, { compact: true }));
       capaianRow.appendChild(capTh);
 
       const perTh = document.createElement("th");
       perTh.className = "col-indicator";
-      perTh.appendChild(buildValueMultiSelect(PERUBAHAN_OPTIONS, fs.perubahan, refresh, { compact: true }));
+      perTh.appendChild(buildValueMultiSelect(PERUBAHAN_OPTIONS, fs.perubahan, refreshTableOnly, { compact: true }));
       perubahanRow.appendChild(perTh);
 
       const th = document.createElement("th");
@@ -528,11 +572,11 @@
     const tbody = el("table-body");
     tbody.innerHTML = "";
 
-    const totalRows = state.filtered.length;
-    const totalPages = Math.max(1, Math.ceil(totalRows / PAGE_SIZE));
+    const tableTotalRows = state.tableRows.length;
+    const totalPages = Math.max(1, Math.ceil(tableTotalRows / PAGE_SIZE));
     if (state.page > totalPages) state.page = totalPages;
     const startIdx = (state.page - 1) * PAGE_SIZE;
-    const pageRows = state.filtered.slice(startIdx, startIdx + PAGE_SIZE);
+    const pageRows = state.tableRows.slice(startIdx, startIdx + PAGE_SIZE);
 
     pageRows.forEach((s, i) => {
       const globalIdx = startIdx + i;
@@ -540,11 +584,15 @@
 
       for (const col of CFG.TABLE_COLUMNS) {
         const td = document.createElement("td");
-        const val = s[col.key] ?? "";
-        td.textContent = val;
+        const rawVal = s[col.key] ?? "";
+        td.textContent = col.key === "status" ? abbreviateStatus(rawVal) : rawVal;
         if (col.truncate) {
           td.className = "col-truncate";
-          td.title = val;
+          td.title = rawVal;
+        }
+        if (col.center) {
+          td.className = "col-center";
+          td.title = rawVal;
         }
         tr.appendChild(td);
       }
@@ -594,7 +642,10 @@
     });
 
     el("result-count").textContent =
-      totalRows.toLocaleString("id-ID") + " satuan pendidikan sesuai filter (dari " + state.schools.length.toLocaleString("id-ID") + " total).";
+      state.filtered.length.toLocaleString("id-ID") +
+      " satuan pendidikan sesuai filter (dari " +
+      state.schools.length.toLocaleString("id-ID") +
+      " total).";
     el("page-info").textContent = "Halaman " + state.page + " dari " + totalPages;
     el("prev-page").disabled = state.page <= 1;
     el("next-page").disabled = state.page >= totalPages;
@@ -643,28 +694,33 @@
   // Orkestrasi
   // ---------------------------------------------------------------------
 
+  /** Filter umum berubah (Kab/Kota, Kecamatan, Jenis, Status, Cari): hitung
+   * ulang semuanya dari atas — ikut mempengaruhi Ringkasan & result-count. */
   function refresh() {
     applyFilters();
     renderSummary();
+    state.page = 1;
+    state.expandedIdx = null;
+    computeTableRows();
+    renderTable();
+  }
+
+  /** Filter Capaian/Perubahan per indikator berubah: hanya pengaruhi tabel
+   * Detail Satuan Pendidikan, tidak perlu hitung ulang Ringkasan. */
+  function refreshTableOnly() {
+    state.page = 1;
+    state.expandedIdx = null;
+    computeTableRows();
     renderTable();
   }
 
   function wireStaticControls() {
     document.addEventListener("click", closeAllMultiSelectPanels);
-    let searchTimer = null;
-    el("search-input").addEventListener("input", (e) => {
-      clearTimeout(searchTimer);
-      const val = e.target.value;
-      searchTimer = setTimeout(() => {
-        state.filters.search = val;
-        refresh();
-      }, 150);
-    });
     el("reset-filters").addEventListener("click", () => {
       for (const { field, multi } of CFG.FILTER_FIELDS) state.filters[field] = multi ? [] : "";
       state.filters.search = "";
       state.filters.indicatorFilters = {};
-      el("search-input").value = "";
+      if (searchInputEl) searchInputEl.value = "";
       computeFilterOptions();
       renderFilterControls();
       refresh();
