@@ -54,8 +54,8 @@ window.DASHBOARD_CONFIG = {
   // Indikator yang ditampilkan di dashboard: key harus sama dengan nama
   // kolom di CONFIG_SHEET_ID, label adalah judul lengkap yang tampil di UI
   // (mis. dropdown, kartu ringkasan), code adalah kode singkatnya saja
-  // (dipakai di header tabel Detail Satuan Pendidikan & filter kode
-  // indikator, supaya tabel tidak terlalu lebar).
+  // (dipakai di header tabel Detail Satuan Pendidikan & dropdown filter
+  // Capaian/Perubahan, supaya tabel tidak terlalu lebar).
   // `smkOnly: true` menandai indikator yang hanya relevan untuk jenjang
   // SMK — kolomnya di tabel detail hanya dimunculkan saat ada satuan
   // pendidikan jenjang SMK di antara hasil filter yang sedang tampil.

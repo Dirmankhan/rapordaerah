@@ -182,6 +182,10 @@ body {
 .multiselect-btn:hover {
   background: var(--surface-2);
 }
+.multiselect-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
 .multiselect-panel {
   position: absolute;
   top: calc(100% + 4px);

@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Dashboard Rapor Pendidikan Daerah</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="css/style.css?v=42" />
-  <link rel="stylesheet" href="css/peta.css?v=42" />
+  <link rel="stylesheet" href="css/style.css?v=43" />
+  <link rel="stylesheet" href="css/peta.css?v=43" />
 </head>
 <body>
   <header class="app-header">
@@ -88,8 +88,16 @@
           <input id="search-input" type="text" placeholder="Ketik NPSN atau nama sekolah..." />
         </div>
         <div class="filter-item">
-          <label for="indicator-code-filter">Kode Indikator</label>
-          <div id="indicator-code-filter"></div>
+          <label for="indikator-filter-select">Indikator (untuk filter Capaian/Perubahan)</label>
+          <select id="indikator-filter-select"></select>
+        </div>
+        <div class="filter-item">
+          <label for="capaian-filter">Capaian</label>
+          <div id="capaian-filter"></div>
+        </div>
+        <div class="filter-item">
+          <label for="perubahan-filter">Perubahan</label>
+          <div id="perubahan-filter"></div>
         </div>
       </div>
       <div class="table-scroll">
@@ -110,12 +118,12 @@
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="js/config.js?v=42"></script>
-  <script src="js/gviz.js?v=42"></script>
-  <script src="js/shared.js?v=42"></script>
-  <script src="js/cache.js?v=42"></script>
-  <script src="js/data.js?v=42"></script>
-  <script src="js/peta.js?v=42"></script>
-  <script src="js/app.js?v=42"></script>
+  <script src="js/config.js?v=43"></script>
+  <script src="js/gviz.js?v=43"></script>
+  <script src="js/shared.js?v=43"></script>
+  <script src="js/cache.js?v=43"></script>
+  <script src="js/data.js?v=43"></script>
+  <script src="js/peta.js?v=43"></script>
+  <script src="js/app.js?v=43"></script>
 </body>
 </html>
