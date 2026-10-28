@@ -173,6 +173,11 @@ body {
   position: static;
   vertical-align: middle;
   padding: 4px 6px;
+  /* th,td di layar lebar (>=960px) punya overflow:hidden utk ellipsis teks
+     — override di sini supaya panel dropdown Capaian/Perubahan (position:
+     absolute, lebih lebar dari sel sempitnya) tidak ikut terpotong/tak
+     kelihatan saat dibuka. */
+  overflow: visible;
 }
 .filter-row-label {
   text-align: left !important;
