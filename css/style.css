@@ -497,6 +497,13 @@ td {
   white-space: normal;
   min-width: 200px;
 }
+/* Beda dari .col-truncate: kolom ini sengaja dibuat cukup lebar (lihat
+   <colgroup> di spm.html) supaya isinya tidak perlu dipotong "..." —
+   boleh membungkus ke baris baru kalau toh masih kurang pas di layar
+   sempit, drpd kepotong. */
+.col-wrap {
+  white-space: normal;
+}
 th {
   color: var(--text-secondary);
   font-weight: 600;

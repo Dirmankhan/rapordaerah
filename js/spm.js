@@ -133,7 +133,7 @@
       const tdNo = document.createElement("td");
       tdNo.textContent = ind.no;
       const tdNama = document.createElement("td");
-      tdNama.className = "col-truncate";
+      tdNama.className = "col-wrap";
       tdNama.textContent = ind.nama;
       tdNama.title = ind.nama;
       const td2022 = document.createElement("td");
