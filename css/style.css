@@ -552,12 +552,3 @@ tr.row-expanded {
   flex-wrap: wrap;
 }
 
-.app-footer {
-  max-width: 1400px;
-  margin: 16px auto 0;
-  color: var(--text-muted);
-  font-size: 0.78rem;
-}
-.app-footer a {
-  color: var(--accent);
-}
