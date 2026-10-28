@@ -503,12 +503,12 @@
    * filter Perubahan, lalu baris kode indikator — ketiganya berbagi
    * <colgroup> yang sama supaya filter tiap indikator otomatis sejajar
    * persis di atas kolomnya sendiri (lebarnya pas sama dengan kotak kode
-   * indikator, lihat .multiselect-compact). Kolom identitas (NPSN s.d.
-   * Status) digabung jadi satu sel (rowspan 2) berisi kotak pencarian,
-   * sejajar dengan kedua baris filter itu — makanya cuma dibangun di baris
-   * Capaian, baris Perubahan tidak perlu sel identitas sama sekali. Kolom
-   * indikator smkOnly disembunyikan kalau tidak ada satuan pendidikan
-   * jenjang SMK di hasil filter saat ini. */
+   * indikator, lihat .multiselect-compact). Kolom identitas dipecah 2+2 di
+   * kedua baris filter: 2 kolom pertama (NPSN+Nama) digabung (rowspan 2)
+   * jadi kotak pencarian, 2 kolom sisanya (Kab./Kota+Status) jadi
+   * keterangan "Capaian"/"Perubahan" tiap baris. Kolom indikator smkOnly
+   * disembunyikan kalau tidak ada satuan pendidikan jenjang SMK di hasil
+   * filter saat ini. */
   function renderTableHead() {
     const hasSMK = state.filtered.some((s) => isSMK(s.jenis));
     state.visibleIndicators = CFG.INDICATORS.filter((ind) => !ind.smkOnly || hasSMK);
@@ -541,14 +541,33 @@
       headRow.appendChild(th);
     });
 
+    // Kotak pencarian cuma menggabungkan 2 kolom identitas pertama (NPSN +
+    // Nama) — bukan semuanya — supaya 2 kolom sisanya (Kab./Kota + Status)
+    // bisa dipakai utk keterangan "Capaian"/"Perubahan" di tiap baris
+    // filter (Capaian di baris atas, Perubahan di baris bawah).
+    const searchColSpan = 2;
+    const labelColSpan = CFG.TABLE_COLUMNS.length - searchColSpan;
+
     if (!capaianRow.querySelector(".search-cell")) {
       const searchTh = document.createElement("th");
       searchTh.className = "search-cell";
       searchTh.rowSpan = 2;
-      searchTh.colSpan = CFG.TABLE_COLUMNS.length;
+      searchTh.colSpan = searchColSpan;
       searchTh.appendChild(getSearchInput());
       capaianRow.insertBefore(searchTh, capaianRow.firstChild);
     }
+    if (!capaianRow.querySelector(".filter-row-label")) {
+      const capLabelTh = document.createElement("th");
+      capLabelTh.className = "filter-row-label";
+      capLabelTh.colSpan = labelColSpan;
+      capLabelTh.textContent = "Capaian";
+      capaianRow.appendChild(capLabelTh);
+    }
+    const perLabelTh = document.createElement("th");
+    perLabelTh.className = "filter-row-label";
+    perLabelTh.colSpan = labelColSpan;
+    perLabelTh.textContent = "Perubahan";
+    perubahanRow.appendChild(perLabelTh);
 
     const capaianByIndicator = state.filterOptions.capaianByIndicator || {};
     for (const ind of state.visibleIndicators) {
