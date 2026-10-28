@@ -479,7 +479,7 @@ tr.row-expanded {
 
 .chip {
   display: inline-block;
-  width: 74px;
+  width: 58px;
   max-width: 100%;
   padding: 2px 4px;
   border-radius: 999px;
@@ -497,7 +497,11 @@ tr.row-expanded {
   color: var(--text-muted);
 }
 .trend {
-  font-size: 0.75rem;
+  display: inline-block;
+  margin-left: 2px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  vertical-align: middle;
 }
 .col-indicator {
   text-align: center;

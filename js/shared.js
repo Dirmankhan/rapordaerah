@@ -31,9 +31,9 @@
   function trendArrow(text) {
     if (!text) return { symbol: "", color: MUTED, text: "-" };
     const t = String(text).toLowerCase();
-    if (t.startsWith("naik")) return { symbol: "▲", color: GOOD, text: String(text) };
-    if (t.startsWith("turun")) return { symbol: "▼", color: CRITICAL, text: String(text) };
-    if (t.startsWith("tetap")) return { symbol: "▬", color: MUTED, text: String(text) };
+    if (t.startsWith("naik")) return { symbol: "↑", color: GOOD, text: String(text) };
+    if (t.startsWith("turun")) return { symbol: "↓", color: CRITICAL, text: String(text) };
+    if (t.startsWith("tetap")) return { symbol: "→", color: MUTED, text: String(text) };
     return { symbol: "", color: MUTED, text: String(text) };
   }
 

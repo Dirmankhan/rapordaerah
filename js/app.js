@@ -14,6 +14,7 @@
     page: 1,
     expandedIdx: null,
     visibleIndicators: CFG.INDICATORS.filter((ind) => !ind.smkOnly),
+    selectedIndicatorCodes: [], // kosong = tampilkan semua kolom indikator
   };
 
   function isSMK(jenis) {
@@ -205,6 +206,95 @@
     document.querySelectorAll(".multiselect-panel").forEach((p) => (p.hidden = true));
   }
 
+  /** Filter kolom indikator mana yang ditampilkan di tabel Detail Satuan
+   * Pendidikan (berdasarkan kode, mis. "A.1"/"D.4"), terpisah dari filter
+   * baris di bagian Rapor Satuan Pendidikan — jadi cukup render ulang
+   * tabel (bukan reapply filter baris) saat pilihannya berubah. */
+  function buildIndicatorCodeMultiSelect() {
+    const selected = state.selectedIndicatorCodes;
+
+    const box = document.createElement("div");
+    box.className = "multiselect";
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "multiselect-btn";
+    const updateBtnLabel = () => {
+      btn.textContent =
+        selected.length === 0 ? "Semua" : selected.length === 1 ? selected[0] : selected.length + " dipilih";
+    };
+    updateBtnLabel();
+
+    const panel = document.createElement("div");
+    panel.className = "multiselect-panel";
+    panel.hidden = true;
+    panel.addEventListener("click", (e) => e.stopPropagation());
+
+    const actions = document.createElement("div");
+    actions.className = "multiselect-actions";
+    const selectAllBtn = document.createElement("button");
+    selectAllBtn.type = "button";
+    selectAllBtn.textContent = "Pilih semua";
+    const clearBtn = document.createElement("button");
+    clearBtn.type = "button";
+    clearBtn.textContent = "Hapus semua";
+    actions.appendChild(selectAllBtn);
+    actions.appendChild(clearBtn);
+    panel.appendChild(actions);
+
+    const checkboxes = [];
+    for (const ind of CFG.INDICATORS) {
+      const optLabel = document.createElement("label");
+      optLabel.className = "multiselect-option";
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.value = ind.code;
+      cb.checked = selected.includes(ind.code);
+      cb.addEventListener("change", () => {
+        const idx = selected.indexOf(ind.code);
+        if (cb.checked && idx === -1) selected.push(ind.code);
+        if (!cb.checked && idx !== -1) selected.splice(idx, 1);
+        updateBtnLabel();
+        renderTable();
+      });
+      optLabel.appendChild(cb);
+      optLabel.appendChild(document.createTextNode(ind.label));
+      panel.appendChild(optLabel);
+      checkboxes.push(cb);
+    }
+
+    const allCodes = CFG.INDICATORS.map((ind) => ind.code);
+    selectAllBtn.addEventListener("click", () => {
+      selected.splice(0, selected.length, ...allCodes);
+      checkboxes.forEach((cb) => (cb.checked = true));
+      updateBtnLabel();
+      renderTable();
+    });
+    clearBtn.addEventListener("click", () => {
+      selected.splice(0, selected.length);
+      checkboxes.forEach((cb) => (cb.checked = false));
+      updateBtnLabel();
+      renderTable();
+    });
+
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const willOpen = panel.hidden;
+      closeAllMultiSelectPanels();
+      panel.hidden = !willOpen;
+    });
+
+    box.appendChild(btn);
+    box.appendChild(panel);
+    return box;
+  }
+
+  function renderIndicatorCodeFilter() {
+    const container = el("indicator-code-filter");
+    container.innerHTML = "";
+    container.appendChild(buildIndicatorCodeMultiSelect());
+  }
+
   function renderFilterControls() {
     const container = el("filters");
     container.innerHTML = "";
@@ -301,10 +391,17 @@
   // ---------------------------------------------------------------------
 
   /** Bangun ulang <colgroup> + header tabel; sembunyikan kolom indikator
-   * smkOnly saat tidak ada satuan pendidikan jenjang SMK di hasil filter. */
+   * smkOnly saat tidak ada satuan pendidikan jenjang SMK di hasil filter,
+   * dan kolom yang kodenya tidak dipilih di filter Kode Indikator (kosong
+   * = tampilkan semua). Header kolom indikator cuma kodenya saja (mis.
+   * "A.1") supaya tabel tidak terlalu lebar — nama lengkapnya ada di title
+   * (tooltip) header. */
   function renderTableHead() {
     const hasSMK = state.filtered.some((s) => isSMK(s.jenis));
-    state.visibleIndicators = CFG.INDICATORS.filter((ind) => !ind.smkOnly || hasSMK);
+    const codes = state.selectedIndicatorCodes;
+    state.visibleIndicators = CFG.INDICATORS.filter(
+      (ind) => (!ind.smkOnly || hasSMK) && (codes.length === 0 || codes.includes(ind.code))
+    );
 
     const colgroup = el("table-colgroup");
     const headRow = el("table-head-row");
@@ -312,7 +409,9 @@
     headRow.innerHTML = "";
 
     const identityWidthTotal = CFG.TABLE_COLUMNS.reduce((sum, c) => sum + c.width, 0);
-    const indicatorWidth = (100 - identityWidthTotal) / state.visibleIndicators.length;
+    const indicatorWidth = state.visibleIndicators.length
+      ? (100 - identityWidthTotal) / state.visibleIndicators.length
+      : 0;
 
     for (const col of CFG.TABLE_COLUMNS) {
       const c = document.createElement("col");
@@ -328,7 +427,8 @@
       c.style.width = indicatorWidth + "%";
       colgroup.appendChild(c);
       const th = document.createElement("th");
-      th.textContent = ind.label;
+      th.textContent = ind.code;
+      th.title = ind.label;
       headRow.appendChild(th);
     }
   }
@@ -379,7 +479,7 @@
             escapeHtml(v.label) +
             "</span>" +
             (trend.symbol
-              ? " <span class='trend' style='color:" + trend.color + "' title='" + escapeHtml(trend.text) + "'>" + trend.symbol + "</span>"
+              ? "<span class='trend' style='color:" + trend.color + "' title='" + escapeHtml(trend.text) + "'>" + trend.symbol + "</span>"
               : "");
         }
         tr.appendChild(td);
@@ -461,6 +561,7 @@
 
   function wireStaticControls() {
     document.addEventListener("click", closeAllMultiSelectPanels);
+    renderIndicatorCodeFilter();
     let searchTimer = null;
     el("search-input").addEventListener("input", (e) => {
       clearTimeout(searchTimer);

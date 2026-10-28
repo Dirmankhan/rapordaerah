@@ -41,27 +41,38 @@ window.DASHBOARD_CONFIG = {
   // (terpisah dari FILTER_FIELDS — Jenis & Kecamatan tetap bisa difilter
   // walau tidak ditampilkan sebagai kolom tabel). `key` harus sama dengan
   // properti objek sekolah di app.js (lihat `loadAll`).
+  // Lebar Nama/Kab.Kota dikecilkan dari 26/10 supaya kolom indikator (yang
+  // skornya kini juga membawa ikon tren naik/turun di sebelah chip) cukup
+  // lega — keduanya tetap truncate+tooltip jika nama/nama kab terpotong.
   TABLE_COLUMNS: [
     { key: "npsn", label: "NPSN", width: 6 },
-    { key: "nama", label: "Nama Satuan Pendidikan", width: 26, truncate: true },
+    { key: "nama", label: "Nama Satuan Pendidikan", width: 18, truncate: true },
     { key: "status", label: "Status", width: 6 },
-    { key: "kabkota", label: "Kab./Kota", width: 10, truncate: true },
+    { key: "kabkota", label: "Kab./Kota", width: 7, truncate: true },
   ],
 
   // Indikator yang ditampilkan di dashboard: key harus sama dengan nama
-  // kolom di CONFIG_SHEET_ID, label adalah judul yang tampil di UI.
+  // kolom di CONFIG_SHEET_ID, label adalah judul lengkap yang tampil di UI
+  // (mis. dropdown, kartu ringkasan), code adalah kode singkatnya saja
+  // (dipakai di header tabel Detail Satuan Pendidikan & filter kode
+  // indikator, supaya tabel tidak terlalu lebar).
   // `smkOnly: true` menandai indikator yang hanya relevan untuk jenjang
   // SMK — kolomnya di tabel detail hanya dimunculkan saat ada satuan
   // pendidikan jenjang SMK di antara hasil filter yang sedang tampil.
   INDICATORS: [
-    { key: "Literasi", label: "A.1 Kemampuan literasi" },
-    { key: "Numerasi", label: "A.2 Kemampuan numerasi" },
-    { key: "Karakter", label: "A.3 Karakter" },
-    { key: "D.1 Kualitas pembelajaran", label: "D.1 Kualitas pembelajaran" },
-    { key: "D.4 Iklim keamanan satuan pendidikan", label: "D.4 Iklim keamanan satuan pendidikan" },
-    { key: "D.8 Iklim Kebinekaan", label: "D.8 Iklim Kebinekaan" },
-    { key: "A.4 Penyerapan lulusan SMK", label: "A.4 Penyerapan lulusan SMK", smkOnly: true },
-    { key: "D.17 Link and match dengan dunia kerja", label: "D.17 Link and match dengan dunia kerja", smkOnly: true },
+    { key: "Literasi", label: "A.1 Kemampuan literasi", code: "A.1" },
+    { key: "Numerasi", label: "A.2 Kemampuan numerasi", code: "A.2" },
+    { key: "Karakter", label: "A.3 Karakter", code: "A.3" },
+    { key: "D.1 Kualitas pembelajaran", label: "D.1 Kualitas pembelajaran", code: "D.1" },
+    { key: "D.4 Iklim keamanan satuan pendidikan", label: "D.4 Iklim keamanan satuan pendidikan", code: "D.4" },
+    { key: "D.8 Iklim Kebinekaan", label: "D.8 Iklim Kebinekaan", code: "D.8" },
+    { key: "A.4 Penyerapan lulusan SMK", label: "A.4 Penyerapan lulusan SMK", code: "A.4", smkOnly: true },
+    {
+      key: "D.17 Link and match dengan dunia kerja",
+      label: "D.17 Link and match dengan dunia kerja",
+      code: "D.17",
+      smkOnly: true,
+    },
   ],
 
   // --- Halaman Indikator SPM per Kabupaten/Kota (spm.html) ---------------
