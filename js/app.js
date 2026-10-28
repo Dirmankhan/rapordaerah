@@ -14,6 +14,25 @@
     { value: "", label: "Tidak ada data" },
   ];
 
+  // Urutan tampil kartu "Ringkasan Capaian Indikator Prioritas": grid 4
+  // kolom x 2 baris (lihat .summary-grid di CSS) menata kartu mengikuti
+  // urutan DOM biasa, jadi susunan array di sini yang menentukan kartu
+  // mana jatuh di kolom mana. 3 indikator umum pertama -> kolom 1-3 baris
+  // 1, lalu indikator smkOnly pertama (A.4) -> kolom 4 baris 1; 3
+  // indikator umum berikutnya -> kolom 1-3 baris 2, lalu indikator
+  // smkOnly kedua (D.17) -> kolom 4 baris 2.
+  const SUMMARY_CARD_ORDER = (function () {
+    const general = CFG.INDICATORS.filter((ind) => !ind.smkOnly);
+    const smkOnly = CFG.INDICATORS.filter((ind) => ind.smkOnly);
+    if (general.length !== 6 || smkOnly.length !== 2) {
+      // Konfigurasi indikator tidak lagi 6 umum + 2 smkOnly seperti
+      // diasumsikan di atas — tampilkan apa adanya drpd memaksakan
+      // susunan 4 kolom yang sudah tidak relevan.
+      return general.concat(smkOnly);
+    }
+    return [...general.slice(0, 3), smkOnly[0], ...general.slice(3), smkOnly[1]];
+  })();
+
   const state = {
     identityHeader: CFG.IDENTITY_FIELDS,
     schools: [], // hasil merge lengkap
@@ -403,7 +422,7 @@
     const container = el("summary");
     container.innerHTML = "";
 
-    for (const ind of CFG.INDICATORS) {
+    for (const ind of SUMMARY_CARD_ORDER) {
       const card = document.createElement("div");
       card.className = "indicator-card";
 

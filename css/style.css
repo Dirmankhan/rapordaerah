@@ -306,10 +306,24 @@ body {
   font-size: 0.85rem;
 }
 
+/* 4 kolom x 2 baris di layar lebar: 6 indikator umum mengisi kolom 1-3,
+   kolom ke-4 khusus indikator jenjang SMK (A.4 di baris 1, D.17 di baris
+   2) — urutan kartu diatur di js/app.js (SUMMARY_CARD_ORDER), bukan di
+   sini. Menyempit jadi 2 lalu 1 kolom di layar sempit. */
 .summary-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: 1fr;
   gap: 16px;
+}
+@media (min-width: 600px) {
+  .summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (min-width: 960px) {
+  .summary-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 .indicator-card h3 {
   margin: 0 0 10px;
