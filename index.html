@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Dashboard Rapor Pendidikan Daerah</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="css/style.css?v=43" />
-  <link rel="stylesheet" href="css/peta.css?v=43" />
+  <link rel="stylesheet" href="css/style.css?v=44" />
+  <link rel="stylesheet" href="css/peta.css?v=44" />
 </head>
 <body>
   <header class="app-header">
@@ -87,19 +87,9 @@
           <label for="search-input">Cari NPSN / Nama Satuan Pendidikan</label>
           <input id="search-input" type="text" placeholder="Ketik NPSN atau nama sekolah..." />
         </div>
-        <div class="filter-item">
-          <label for="indikator-filter-select">Indikator (untuk filter Capaian/Perubahan)</label>
-          <select id="indikator-filter-select"></select>
-        </div>
-        <div class="filter-item">
-          <label for="capaian-filter">Capaian</label>
-          <div id="capaian-filter"></div>
-        </div>
-        <div class="filter-item">
-          <label for="perubahan-filter">Perubahan</label>
-          <div id="perubahan-filter"></div>
-        </div>
       </div>
+      <p class="muted small">Filter satuan pendidikan berdasarkan Label Capaian dan arah Perubahan tiap indikator:</p>
+      <div class="indicator-filter-grid" id="indicator-filter-grid"></div>
       <div class="table-scroll">
         <table id="detail-table">
           <colgroup id="table-colgroup"></colgroup>
@@ -118,12 +108,12 @@
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="js/config.js?v=43"></script>
-  <script src="js/gviz.js?v=43"></script>
-  <script src="js/shared.js?v=43"></script>
-  <script src="js/cache.js?v=43"></script>
-  <script src="js/data.js?v=43"></script>
-  <script src="js/peta.js?v=43"></script>
-  <script src="js/app.js?v=43"></script>
+  <script src="js/config.js?v=44"></script>
+  <script src="js/gviz.js?v=44"></script>
+  <script src="js/shared.js?v=44"></script>
+  <script src="js/cache.js?v=44"></script>
+  <script src="js/data.js?v=44"></script>
+  <script src="js/peta.js?v=44"></script>
+  <script src="js/app.js?v=44"></script>
 </body>
 </html>

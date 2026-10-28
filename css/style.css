@@ -165,6 +165,26 @@ body {
   margin: 12px 0 16px;
 }
 
+.indicator-filter-grid {
+  display: grid;
+  grid-template-columns: minmax(64px, auto) minmax(140px, 1fr) minmax(140px, 1fr);
+  gap: 8px 16px;
+  align-items: center;
+  margin-bottom: 18px;
+}
+.indicator-filter-head {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  padding-bottom: 2px;
+  border-bottom: 1px solid var(--gridline);
+}
+.indicator-filter-code {
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: help;
+}
+
 .multiselect {
   position: relative;
 }

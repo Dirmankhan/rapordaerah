@@ -19,7 +19,7 @@
     schools: [], // hasil merge lengkap
     filtered: [],
     filterOptions: {}, // field -> sorted unique values
-    filters: { indikatorKode: "", capaian: [], perubahan: [] }, // field -> selected value ("" = semua)
+    filters: { indicatorFilters: {} }, // field -> selected value ("" = semua); indicatorFilters: code -> { capaian: [], perubahan: [] }
     page: 1,
     expandedIdx: null,
     visibleIndicators: CFG.INDICATORS.filter((ind) => !ind.smkOnly),
@@ -71,34 +71,36 @@
     state.filterOptions = opts;
   }
 
-  /** Opsi filter "Capaian", dihitung ulang dari indikator yang sedang
-   * dipilih di filter "Indikator" (mis. memilih "A.1" menampilkan hanya
-   * label capaian yang benar-benar muncul utk A.1, termasuk "Tidak
-   * Tersedia" kalau ada satuan pendidikan tanpa data). Kosong kalau belum
-   * ada indikator dipilih. */
-  function computeCapaianOptions() {
-    const code = state.filters.indikatorKode;
-    const ind = code ? CFG.INDICATORS.find((i) => i.code === code) : null;
-    if (!ind) {
-      state.filterOptions.capaian = [];
-      return;
+  /** Opsi filter "Capaian" utk tiap indikator, dihitung dari seluruh data
+   * (bukan dari hasil filter saat ini) — mis. untuk "A.1" berisi semua
+   * label capaian yang benar-benar muncul di data (termasuk "Tidak
+   * Tersedia" kalau ada satuan pendidikan tanpa data). */
+  function computeAllCapaianOptions() {
+    const result = {};
+    for (const ind of CFG.INDICATORS) {
+      const set = new Set();
+      for (const s of state.schools) {
+        const v = ind.smkOnly && !isSMK(s.jenis) ? null : s.indikator[ind.key];
+        set.add(v && v.label ? String(v.label) : "Tidak Tersedia");
+      }
+      result[ind.code] = Array.from(set).sort(
+        (a, b) => categorize(a).rank - categorize(b).rank || a.localeCompare(b, "id")
+      );
     }
-    const set = new Set();
-    for (const s of state.schools) {
-      const v = ind.smkOnly && !isSMK(s.jenis) ? null : s.indikator[ind.key];
-      set.add(v && v.label ? String(v.label) : "Tidak Tersedia");
+    state.filterOptions.capaianByIndicator = result;
+  }
+
+  /** State filter Capaian/Perubahan utk satu indikator (dibuat on-demand). */
+  function getIndicatorFilterState(code) {
+    if (!state.filters.indicatorFilters[code]) {
+      state.filters.indicatorFilters[code] = { capaian: [], perubahan: [] };
     }
-    state.filterOptions.capaian = Array.from(set).sort(
-      (a, b) => categorize(a).rank - categorize(b).rank || a.localeCompare(b, "id")
-    );
+    return state.filters.indicatorFilters[code];
   }
 
   function applyFilters() {
     const search = (state.filters.search || "").trim().toLowerCase();
-    const indCode = state.filters.indikatorKode;
-    const ind = indCode ? CFG.INDICATORS.find((i) => i.code === indCode) : null;
-    const capaianSel = state.filters.capaian || [];
-    const perubahanSel = state.filters.perubahan || [];
+    const indicatorFilters = state.filters.indicatorFilters || {};
     state.filtered = state.schools.filter((s) => {
       for (const { field, multi } of CFG.FILTER_FIELDS) {
         const key = fieldKeyFor(field);
@@ -113,17 +115,18 @@
         const hay = (String(s.npsn) + " " + s.nama).toLowerCase();
         if (!hay.includes(search)) return false;
       }
-      // Filter Capaian/Perubahan: hanya aktif kalau sebuah indikator sudah
-      // dipilih di dropdown "Indikator" — keduanya menilai indikator itu
-      // saja (satu satuan pendidikan punya capaian/perubahan berbeda-beda
-      // utk tiap indikator, jadi filter ini perlu tahu indikator mana).
-      if (ind) {
+      // Filter Capaian/Perubahan per indikator: tiap indikator yang punya
+      // filter capaian dan/atau perubahan terisi harus cocok (AND di antara
+      // semua indikator yang difilter).
+      for (const ind of CFG.INDICATORS) {
+        const fs = indicatorFilters[ind.code];
+        if (!fs || (fs.capaian.length === 0 && fs.perubahan.length === 0)) continue;
         const v = ind.smkOnly && !isSMK(s.jenis) ? null : s.indikator[ind.key];
         const label = v && v.label ? String(v.label) : "Tidak Tersedia";
-        if (capaianSel.length > 0 && !capaianSel.includes(label)) return false;
-        if (perubahanSel.length > 0) {
+        if (fs.capaian.length > 0 && !fs.capaian.includes(label)) return false;
+        if (fs.perubahan.length > 0) {
           const cat = trendCategory(v && v.perubahanTahun);
-          if (!perubahanSel.includes(cat)) return false;
+          if (!fs.perubahan.includes(cat)) return false;
         }
       }
       return true;
@@ -347,58 +350,41 @@
     return box;
   }
 
-  /** Dropdown pilih-satu indikator (berdasarkan kode) yang jadi konteks utk
-   * filter Capaian & Perubahan di bawahnya — satu satuan pendidikan punya
-   * capaian/perubahan berbeda-beda per indikator, jadi filter itu perlu tahu
-   * indikator mana yang dimaksud. */
-  function renderIndikatorFilterSelect() {
-    const select = el("indikator-filter-select");
-    select.innerHTML = "";
-    const optAll = document.createElement("option");
-    optAll.value = "";
-    optAll.textContent = "Pilih indikator...";
-    select.appendChild(optAll);
-    for (const ind of CFG.INDICATORS) {
-      const opt = document.createElement("option");
-      opt.value = ind.code;
-      opt.textContent = ind.code + " — " + ind.label.replace(ind.code + " ", "");
-      select.appendChild(opt);
+  /** Grid filter Capaian & Perubahan per indikator: satu baris per indikator
+   * (kode + dua multiselect), semua indikator tampil sekaligus — tiap
+   * indikator difilter independen dari yang lain (digabung dengan AND di
+   * applyFilters). Dipanggil ulang setelah data dimuat (opsi Capaian
+   * tergantung data) dan saat reset filter. */
+  function renderIndicatorFilterGrid() {
+    const grid = el("indicator-filter-grid");
+    grid.innerHTML = "";
+
+    for (const headText of ["Indikator", "Capaian", "Perubahan"]) {
+      const head = document.createElement("div");
+      head.className = "indicator-filter-head";
+      head.textContent = headText;
+      grid.appendChild(head);
     }
-    select.value = state.filters.indikatorKode || "";
-  }
 
-  function renderCapaianFilter() {
-    const container = el("capaian-filter");
-    container.innerHTML = "";
-    const hasIndikator = !!state.filters.indikatorKode;
-    const options = (state.filterOptions.capaian || []).map((lbl) => ({ value: lbl, label: lbl }));
-    container.appendChild(
-      buildValueMultiSelect(options, state.filters.capaian, refresh, {
-        disabled: !hasIndikator,
-        disabledText: "Pilih indikator dulu",
-      })
-    );
-  }
+    const capaianByIndicator = state.filterOptions.capaianByIndicator || {};
+    for (const ind of CFG.INDICATORS) {
+      const fs = getIndicatorFilterState(ind.code);
 
-  function renderPerubahanFilter() {
-    const container = el("perubahan-filter");
-    container.innerHTML = "";
-    const hasIndikator = !!state.filters.indikatorKode;
-    container.appendChild(
-      buildValueMultiSelect(PERUBAHAN_OPTIONS, state.filters.perubahan, refresh, {
-        disabled: !hasIndikator,
-        disabledText: "Pilih indikator dulu",
-      })
-    );
-  }
+      const codeEl = document.createElement("div");
+      codeEl.className = "indicator-filter-code";
+      codeEl.textContent = ind.code;
+      codeEl.title = ind.label;
+      grid.appendChild(codeEl);
 
-  function onIndikatorFilterChanged() {
-    state.filters.capaian = [];
-    state.filters.perubahan = [];
-    computeCapaianOptions();
-    renderCapaianFilter();
-    renderPerubahanFilter();
-    refresh();
+      const capOptions = (capaianByIndicator[ind.code] || []).map((lbl) => ({ value: lbl, label: lbl }));
+      const capCell = document.createElement("div");
+      capCell.appendChild(buildValueMultiSelect(capOptions, fs.capaian, refresh));
+      grid.appendChild(capCell);
+
+      const perCell = document.createElement("div");
+      perCell.appendChild(buildValueMultiSelect(PERUBAHAN_OPTIONS, fs.perubahan, refresh));
+      grid.appendChild(perCell);
+    }
   }
 
   function renderFilterControls() {
@@ -664,13 +650,6 @@
 
   function wireStaticControls() {
     document.addEventListener("click", closeAllMultiSelectPanels);
-    renderIndikatorFilterSelect();
-    renderCapaianFilter();
-    renderPerubahanFilter();
-    el("indikator-filter-select").addEventListener("change", (e) => {
-      state.filters.indikatorKode = e.target.value;
-      onIndikatorFilterChanged();
-    });
     let searchTimer = null;
     el("search-input").addEventListener("input", (e) => {
       clearTimeout(searchTimer);
@@ -683,16 +662,11 @@
     el("reset-filters").addEventListener("click", () => {
       for (const { field, multi } of CFG.FILTER_FIELDS) state.filters[field] = multi ? [] : "";
       state.filters.search = "";
-      state.filters.indikatorKode = "";
-      state.filters.capaian = [];
-      state.filters.perubahan = [];
+      state.filters.indicatorFilters = {};
       el("search-input").value = "";
-      el("indikator-filter-select").value = "";
       computeFilterOptions();
-      computeCapaianOptions();
       renderFilterControls();
-      renderCapaianFilter();
-      renderPerubahanFilter();
+      renderIndicatorFilterGrid();
       refresh();
     });
     el("prev-page").addEventListener("click", () => {
@@ -716,6 +690,8 @@
       state.schools = result.schools;
       computeFilterOptions();
       renderFilterControls();
+      computeAllCapaianOptions();
+      renderIndicatorFilterGrid();
       refresh();
       setStatus("");
     } catch (err) {
