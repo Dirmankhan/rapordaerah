@@ -29,14 +29,17 @@
   }
 
   /** Kategorikan teks "Perubahan dari Tahun ..." jadi "naik"/"turun"/"tetap",
-   * atau "" kalau kosong/tidak dikenali. Dipakai bareng oleh ikon tren
-   * (trendArrow) dan filter Perubahan pada tabel Detail Satuan Pendidikan. */
+   * atau "" kalau kosong/tidak dikenali (mis. "Tidak Tersedia (...)" —
+   * satdik tidak ikut AN tahun lalu, bukan benar-benar "tanpa perubahan").
+   * Dipakai bareng oleh ikon tren (trendArrow) dan filter Perubahan pada
+   * tabel Detail Satuan Pendidikan. Sheet sumber menulis "tidak berubah"
+   * (bukan "tetap") utk kategori ini — keduanya dikenali sebagai "tetap". */
   function trendCategory(text) {
     if (!text) return "";
     const t = String(text).toLowerCase();
     if (t.startsWith("naik")) return "naik";
     if (t.startsWith("turun")) return "turun";
-    if (t.startsWith("tetap")) return "tetap";
+    if (t.startsWith("tetap") || t.startsWith("tidak berubah")) return "tetap";
     return "";
   }
 

@@ -39,6 +39,16 @@
     return val;
   }
 
+  /** Label Capaian sebuah indikator ("Baik"/"Sedang"/"Kurang" dst., atau
+   * "Tidak Tersedia" kalau kosong) — dipakai utk opsi filter Capaian dan
+   * perbandingan filter, bukan cuma tampilan. Sheet sumber kadang
+   * menyimpan nilainya dengan spasi di ujung (mis. "Baik "), makanya
+   * di-trim supaya "Baik " dan "Baik" dianggap sama persis, bukan dua
+   * opsi berbeda. */
+  function indicatorLabel(v) {
+    return v && v.label ? String(v.label).trim() : "Tidak Tersedia";
+  }
+
   const el = (id) => document.getElementById(id);
 
   function setStatus(msg, isError) {
@@ -91,7 +101,7 @@
       const set = new Set();
       for (const s of state.schools) {
         const v = ind.smkOnly && !isSMK(s.jenis) ? null : s.indikator[ind.key];
-        set.add(v && v.label ? String(v.label) : "Tidak Tersedia");
+        set.add(indicatorLabel(v));
       }
       result[ind.code] = Array.from(set).sort(
         (a, b) => categorize(a).rank - categorize(b).rank || a.localeCompare(b, "id")
@@ -143,7 +153,7 @@
         const fs = indicatorFilters[ind.code];
         if (!fs || (fs.capaian.length === 0 && fs.perubahan.length === 0)) continue;
         const v = ind.smkOnly && !isSMK(s.jenis) ? null : s.indikator[ind.key];
-        const label = v && v.label ? String(v.label) : "Tidak Tersedia";
+        const label = indicatorLabel(v);
         if (fs.capaian.length > 0 && !fs.capaian.includes(label)) return false;
         if (fs.perubahan.length > 0) {
           const cat = trendCategory(v && v.perubahanTahun);
@@ -405,7 +415,7 @@
       let withData = 0;
       for (const s of state.filtered) {
         const v = s.indikator[ind.key];
-        const lbl = v && v.label ? String(v.label) : "Tidak Tersedia";
+        const lbl = indicatorLabel(v);
         counts.set(lbl, (counts.get(lbl) || 0) + 1);
         if (v && v.label) withData++;
       }
@@ -565,6 +575,23 @@
       th.className = "col-indicator";
       headRow.appendChild(th);
     }
+
+    stackStickyHeaderRows(capaianRow, perubahanRow, headRow);
+  }
+
+  /** Ketiga baris <thead> (filter Capaian, filter Perubahan, kode
+   * indikator) semuanya position:sticky (lihat CSS) supaya tabel yang
+   * berisi ribuan baris tetap bisa difilter/dicari sambil discroll — tanpa
+   * ini, kotak pencarian & filter akan hilang dari layar begitu discroll
+   * lewat baris pertama. Browser tidak otomatis menumpuk beberapa baris
+   * sticky; `top` tiap baris harus dihitung manual dari tinggi baris
+   * sticky di atasnya supaya tidak saling menimpa. */
+  function stackStickyHeaderRows(capaianRow, perubahanRow, headRow) {
+    const capHeight = capaianRow.getBoundingClientRect().height;
+    const perHeight = perubahanRow.getBoundingClientRect().height;
+    Array.from(capaianRow.children).forEach((th) => (th.style.top = "0px"));
+    Array.from(perubahanRow.children).forEach((th) => (th.style.top = capHeight + "px"));
+    Array.from(headRow.children).forEach((th) => (th.style.top = capHeight + perHeight + "px"));
   }
 
   function renderTable() {
@@ -606,15 +633,16 @@
         if (!v || !v.label) {
           td.innerHTML = "<span class='chip chip-muted'>-</span>";
         } else {
-          const color = categorize(v.label).color;
+          const label = String(v.label).trim();
+          const color = categorize(label).color;
           const trend = trendArrow(v.perubahanTahun);
           td.innerHTML =
             "<span class='chip' style='background:" +
             color +
             "' title='" +
-            escapeHtml(v.label) +
+            escapeHtml(label) +
             "'>" +
-            escapeHtml(v.label) +
+            escapeHtml(label) +
             "</span>" +
             (trend.symbol
               ? "<span class='trend' style='color:" + trend.color + "' title='" + escapeHtml(trend.text) + "'>" + trend.symbol + "</span>"
@@ -669,7 +697,7 @@
       } else {
         const dl = document.createElement("dl");
         const rows = [
-          ["Label Capaian", v.label],
+          ["Label Capaian", String(v.label).trim()],
           ["Nilai Capaian", v.nilai ?? "-"],
           ["Perubahan dari Tahun 2024", v.perubahanTahun ?? "-"],
           ["Perubahan Nilai", v.perubahanNilai ?? "-"],

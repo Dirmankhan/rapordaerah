@@ -161,11 +161,15 @@ body {
   width: 100%;
 }
 /* Baris filter Capaian/Perubahan di <thead>, di atas kolom indikator
-   masing-masing (lihat js/app.js renderTableHead). Bukan sticky seperti
-   baris kode indikator di bawahnya, supaya tidak tumpang tindih saat
-   discroll. */
+   masing-masing (lihat js/app.js renderTableHead). Ikut sticky seperti
+   baris kode indikator di bawahnya (supaya kotak pencarian & filter tidak
+   hilang dari layar saat tabel discroll ke bawah — tabelnya bisa berisi
+   ribuan baris) — posisi `top` tiap baris dihitung & diisi lewat JS
+   (stackStickyRows) supaya ketiganya bertumpuk rapi, tidak saling
+   menimpa. */
 .filter-row th {
-  position: static;
+  position: sticky;
+  z-index: 3;
   vertical-align: middle;
   padding: 4px 6px;
   /* th,td di layar lebar (>=960px) punya overflow:hidden utk ellipsis teks
@@ -476,6 +480,7 @@ th {
   font-weight: 600;
   position: sticky;
   top: 0;
+  z-index: 2;
   background: var(--surface-1);
 }
 
