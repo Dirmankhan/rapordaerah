@@ -258,14 +258,15 @@
 
   /** Dropdown multi-pilih generik dari daftar {value, label} + array terpilih
    * (dimodifikasi in-place), dipakai utk filter Capaian & Perubahan pada
-   * tabel Detail Satuan Pendidikan. Kalau `opts.disabled` true (belum ada
-   * indikator dipilih), tombolnya dinonaktifkan dan menampilkan
-   * `opts.disabledText`. */
+   * tabel Detail Satuan Pendidikan. `opts.compact` memakai gaya ringkas
+   * (tombol sekecil kotak kode indikator di header, panel dropdown
+   * ditengahkan) utk dipasang di dalam sel header kolom indikator yang
+   * sempit. */
   function buildValueMultiSelect(options, selected, onChange, opts) {
     opts = opts || {};
 
     const box = document.createElement("div");
-    box.className = "multiselect";
+    box.className = "multiselect" + (opts.compact ? " multiselect-compact" : "");
 
     const btn = document.createElement("button");
     btn.type = "button";
@@ -348,43 +349,6 @@
     box.appendChild(btn);
     box.appendChild(panel);
     return box;
-  }
-
-  /** Grid filter Capaian & Perubahan per indikator: satu baris per indikator
-   * (kode + dua multiselect), semua indikator tampil sekaligus — tiap
-   * indikator difilter independen dari yang lain (digabung dengan AND di
-   * applyFilters). Dipanggil ulang setelah data dimuat (opsi Capaian
-   * tergantung data) dan saat reset filter. */
-  function renderIndicatorFilterGrid() {
-    const grid = el("indicator-filter-grid");
-    grid.innerHTML = "";
-
-    for (const headText of ["Indikator", "Capaian", "Perubahan"]) {
-      const head = document.createElement("div");
-      head.className = "indicator-filter-head";
-      head.textContent = headText;
-      grid.appendChild(head);
-    }
-
-    const capaianByIndicator = state.filterOptions.capaianByIndicator || {};
-    for (const ind of CFG.INDICATORS) {
-      const fs = getIndicatorFilterState(ind.code);
-
-      const codeEl = document.createElement("div");
-      codeEl.className = "indicator-filter-code";
-      codeEl.textContent = ind.code;
-      codeEl.title = ind.label;
-      grid.appendChild(codeEl);
-
-      const capOptions = (capaianByIndicator[ind.code] || []).map((lbl) => ({ value: lbl, label: lbl }));
-      const capCell = document.createElement("div");
-      capCell.appendChild(buildValueMultiSelect(capOptions, fs.capaian, refresh));
-      grid.appendChild(capCell);
-
-      const perCell = document.createElement("div");
-      perCell.appendChild(buildValueMultiSelect(PERUBAHAN_OPTIONS, fs.perubahan, refresh));
-      grid.appendChild(perCell);
-    }
   }
 
   function renderFilterControls() {
@@ -482,18 +446,24 @@
   // Render: tabel detail
   // ---------------------------------------------------------------------
 
-  /** Bangun ulang <colgroup> + header tabel; sembunyikan kolom indikator
-   * smkOnly saat tidak ada satuan pendidikan jenjang SMK di hasil filter.
-   * Header kolom indikator cuma kodenya saja (mis. "A.1"), ditengahkan,
-   * supaya tabel tidak terlalu lebar — nama lengkapnya ada di title
-   * (tooltip) header. */
+  /** Bangun ulang <colgroup> + 3 baris <thead>: baris filter Capaian, baris
+   * filter Perubahan, lalu baris kode indikator — ketiganya berbagi
+   * <colgroup> yang sama supaya filter tiap indikator otomatis sejajar
+   * persis di atas kolomnya sendiri (lebarnya pas sama dengan kotak kode
+   * indikator, lihat .multiselect-compact). Kolom indikator smkOnly
+   * disembunyikan kalau tidak ada satuan pendidikan jenjang SMK di hasil
+   * filter saat ini. */
   function renderTableHead() {
     const hasSMK = state.filtered.some((s) => isSMK(s.jenis));
     state.visibleIndicators = CFG.INDICATORS.filter((ind) => !ind.smkOnly || hasSMK);
 
     const colgroup = el("table-colgroup");
+    const capaianRow = el("table-filter-capaian-row");
+    const perubahanRow = el("table-filter-perubahan-row");
     const headRow = el("table-head-row");
     colgroup.innerHTML = "";
+    capaianRow.innerHTML = "";
+    perubahanRow.innerHTML = "";
     headRow.innerHTML = "";
 
     const identityWidthTotal = CFG.TABLE_COLUMNS.reduce((sum, c) => sum + c.width, 0);
@@ -501,19 +471,50 @@
       ? (100 - identityWidthTotal) / state.visibleIndicators.length
       : 0;
 
-    for (const col of CFG.TABLE_COLUMNS) {
+    CFG.TABLE_COLUMNS.forEach((col, i) => {
       const c = document.createElement("col");
       c.style.width = col.width + "%";
       colgroup.appendChild(c);
+
+      // Label "Capaian"/"Perubahan" ditaruh di kolom Nama Satuan Pendidikan
+      // (kolom identitas paling lebar) supaya kedua baris filter ini jelas
+      // maksudnya, bukan sekadar baris kosong.
+      const capTh = document.createElement("th");
+      const perTh = document.createElement("th");
+      if (i === 1) {
+        capTh.textContent = "Capaian";
+        perTh.textContent = "Perubahan";
+        capTh.className = "filter-row-label";
+        perTh.className = "filter-row-label";
+      }
+      capaianRow.appendChild(capTh);
+      perubahanRow.appendChild(perTh);
+
       const th = document.createElement("th");
       th.textContent = col.label;
       if (col.truncate) th.className = "col-truncate";
       headRow.appendChild(th);
-    }
+    });
+
+    const capaianByIndicator = state.filterOptions.capaianByIndicator || {};
     for (const ind of state.visibleIndicators) {
       const c = document.createElement("col");
       c.style.width = indicatorWidth + "%";
       colgroup.appendChild(c);
+
+      const fs = getIndicatorFilterState(ind.code);
+
+      const capTh = document.createElement("th");
+      capTh.className = "col-indicator";
+      const capOptions = (capaianByIndicator[ind.code] || []).map((lbl) => ({ value: lbl, label: lbl }));
+      capTh.appendChild(buildValueMultiSelect(capOptions, fs.capaian, refresh, { compact: true }));
+      capaianRow.appendChild(capTh);
+
+      const perTh = document.createElement("th");
+      perTh.className = "col-indicator";
+      perTh.appendChild(buildValueMultiSelect(PERUBAHAN_OPTIONS, fs.perubahan, refresh, { compact: true }));
+      perubahanRow.appendChild(perTh);
+
       const th = document.createElement("th");
       th.textContent = ind.code;
       th.title = ind.label;
@@ -666,7 +667,6 @@
       el("search-input").value = "";
       computeFilterOptions();
       renderFilterControls();
-      renderIndicatorFilterGrid();
       refresh();
     });
     el("prev-page").addEventListener("click", () => {
@@ -691,7 +691,6 @@
       computeFilterOptions();
       renderFilterControls();
       computeAllCapaianOptions();
-      renderIndicatorFilterGrid();
       refresh();
       setStatus("");
     } catch (err) {

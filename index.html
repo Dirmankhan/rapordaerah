@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Dashboard Rapor Pendidikan Daerah</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="css/style.css?v=44" />
-  <link rel="stylesheet" href="css/peta.css?v=44" />
+  <link rel="stylesheet" href="css/style.css?v=45" />
+  <link rel="stylesheet" href="css/peta.css?v=45" />
 </head>
 <body>
   <header class="app-header">
@@ -88,12 +88,13 @@
           <input id="search-input" type="text" placeholder="Ketik NPSN atau nama sekolah..." />
         </div>
       </div>
-      <p class="muted small">Filter satuan pendidikan berdasarkan Label Capaian dan arah Perubahan tiap indikator:</p>
-      <div class="indicator-filter-grid" id="indicator-filter-grid"></div>
+      <p class="muted small">Filter Capaian &amp; Perubahan tiap indikator ada di atas kolomnya masing-masing pada tabel.</p>
       <div class="table-scroll">
         <table id="detail-table">
           <colgroup id="table-colgroup"></colgroup>
           <thead>
+            <tr id="table-filter-capaian-row" class="filter-row"></tr>
+            <tr id="table-filter-perubahan-row" class="filter-row"></tr>
             <tr id="table-head-row"></tr>
           </thead>
           <tbody id="table-body"></tbody>
@@ -108,12 +109,12 @@
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="js/config.js?v=44"></script>
-  <script src="js/gviz.js?v=44"></script>
-  <script src="js/shared.js?v=44"></script>
-  <script src="js/cache.js?v=44"></script>
-  <script src="js/data.js?v=44"></script>
-  <script src="js/peta.js?v=44"></script>
-  <script src="js/app.js?v=44"></script>
+  <script src="js/config.js?v=45"></script>
+  <script src="js/gviz.js?v=45"></script>
+  <script src="js/shared.js?v=45"></script>
+  <script src="js/cache.js?v=45"></script>
+  <script src="js/data.js?v=45"></script>
+  <script src="js/peta.js?v=45"></script>
+  <script src="js/app.js?v=45"></script>
 </body>
 </html>

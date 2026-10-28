@@ -165,24 +165,30 @@ body {
   margin: 12px 0 16px;
 }
 
-.indicator-filter-grid {
-  display: grid;
-  grid-template-columns: minmax(64px, auto) minmax(140px, 1fr) minmax(140px, 1fr);
-  gap: 8px 16px;
-  align-items: center;
-  margin-bottom: 18px;
+/* Baris filter Capaian/Perubahan di <thead>, di atas kolom indikator
+   masing-masing (lihat js/app.js renderTableHead). Bukan sticky seperti
+   baris kode indikator di bawahnya, supaya tidak tumpang tindih saat
+   discroll. */
+.filter-row th {
+  position: static;
+  vertical-align: middle;
+  padding: 4px 6px;
 }
-.indicator-filter-head {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-  padding-bottom: 2px;
-  border-bottom: 1px solid var(--gridline);
-}
-.indicator-filter-code {
-  font-size: 0.85rem;
+.filter-row-label {
+  text-align: left !important;
+  font-size: 0.68rem;
   font-weight: 600;
-  white-space: nowrap;
-  cursor: help;
+  color: var(--text-secondary);
+}
+.multiselect-compact .multiselect-btn {
+  padding: 3px 4px;
+  font-size: 0.68rem;
+}
+.multiselect-compact .multiselect-panel {
+  left: 50%;
+  right: auto;
+  min-width: 130px;
+  transform: translateX(-50%);
 }
 
 .multiselect {
@@ -468,6 +474,14 @@ th {
    tetap (lihat <colgroup> di index.html) supaya semua kolom muat dalam
    satu layar tanpa perlu scroll horizontal. */
 @media (min-width: 960px) {
+  /* Tabel di layar lebar selalu pas 100% lebar kontainer (table-layout:
+     fixed, min-width:0 di bawah), jadi tidak pernah butuh scroll
+     horizontal di sini — overflow dibuka supaya panel dropdown filter
+     Capaian/Perubahan di header (lihat .multiselect-compact) tidak
+     terpotong oleh .table-scroll. */
+  .table-scroll {
+    overflow-x: visible;
+  }
   table {
     table-layout: fixed;
     min-width: 0;
