@@ -94,8 +94,14 @@
     }[filterField];
   }
 
+  /** Mengisi state.filterOptions[field] utk tiap CFG.FILTER_FIELDS — PER
+   * FIELD, bukan mengganti seluruh objek state.filterOptions, supaya
+   * properti lain yang juga disimpan di situ (capaianByIndicator, diisi
+   * computeAllCapaianOptions) tidak ikut terhapus kalau fungsi ini
+   * dipanggil ulang (mis. saat Kabupaten/Kota diganti, atau Reset Filter
+   * diklik) — itulah penyebab opsi filter Capaian jadi kosong sebelum
+   * perbaikan ini. */
   function computeFilterOptions() {
-    const opts = {};
     const selectedKabKota = state.filters["Kabupaten/Kota"];
     for (const { field } of CFG.FILTER_FIELDS) {
       const key = fieldKeyFor(field);
@@ -105,9 +111,8 @@
         if (field === "Kecamatan" && selectedKabKota && s.kabkota !== selectedKabKota) continue;
         if (s[key]) set.add(s[key]);
       }
-      opts[field] = Array.from(set).sort((a, b) => a.localeCompare(b, "id"));
+      state.filterOptions[field] = Array.from(set).sort((a, b) => a.localeCompare(b, "id"));
     }
-    state.filterOptions = opts;
   }
 
   /** Opsi filter "Capaian" utk tiap indikator, dihitung dari seluruh data
