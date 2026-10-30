@@ -717,6 +717,12 @@
       " satuan pendidikan sesuai filter (dari " +
       state.schools.length.toLocaleString("id-ID") +
       " total).";
+    // Jumlah di samping judul "Detail Satuan Pendidikan" — ikut filter
+    // umum DAN filter Capaian/Perubahan/Cari khusus tabel ini (beda dari
+    // #result-count di atas yang cuma filter umum), jadi selalu sama
+    // dengan jumlah baris yang benar-benar tampil/dipaginasi di tabel.
+    el("detail-count").textContent =
+      tableTotalRows.toLocaleString("id-ID") + " satuan pendidikan";
     el("page-info").textContent = "Halaman " + state.page + " dari " + totalPages;
     el("prev-page").disabled = state.page <= 1;
     el("next-page").disabled = state.page >= totalPages;
@@ -795,6 +801,16 @@
       computeFilterOptions();
       renderFilterControls();
       refresh();
+    });
+    // Reset khusus filter tabel Detail Satuan Pendidikan sendiri (kotak
+    // Cari + Capaian/Perubahan per indikator) — tidak menyentuh filter
+    // umum (Kab/Kota, Kecamatan, Jenis, Status) di atas, jadi cukup
+    // refreshTableOnly(), tidak perlu applyFilters()/renderSummary() ulang.
+    el("reset-detail-filters").addEventListener("click", () => {
+      state.filters.search = "";
+      state.filters.indicatorFilters = {};
+      if (searchInputEl) searchInputEl.value = "";
+      refreshTableOnly();
     });
     el("prev-page").addEventListener("click", () => {
       if (state.page > 1) {

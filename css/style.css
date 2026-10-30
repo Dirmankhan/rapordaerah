@@ -114,6 +114,28 @@ body {
   margin: 0 0 12px;
   font-size: 1.1rem;
 }
+/* Judul panel + jumlah hasil & tombol reset filter-nya sendiri, rata di
+   sisi kanan (lihat #detail-count/#reset-detail-filters di panel "Detail
+   Satuan Pendidikan"). */
+.panel-title-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-bottom: 12px;
+}
+.panel-title-row h2 {
+  margin: 0;
+}
+.panel-title-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.panel-title-actions .result-count {
+  margin: 0;
+}
 
 .status-box {
   max-width: 1400px;
