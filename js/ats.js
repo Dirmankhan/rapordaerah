@@ -82,10 +82,28 @@
     const raw = await Gviz.fetchSheetRaw(CFG.ATS_SHEET_ID, sheetName);
     if (raw.length < 6) throw new Error('Sheet "' + sheetName + '" kosong / format tidak dikenali.');
 
-    const dateHeaderRow = raw[3] || [];
+    // Baris & kolom tanggal dicari dari ISI selnya (baris sub-header
+    // "Jumlah ATS" menandai kolom pertama tiap grup 3 kolom per tanggal,
+    // labelnya ada di baris persis di atasnya) — bukan dari indeks baris
+    // tetap, supaya tahan kalau gviz melewati baris kosong di awal sheet
+    // (jumlah baris sebelum data bisa beda2 antar sheet/waktu akses).
+    let subHeaderRowIdx = -1;
+    for (let r = 0; r < raw.length; r++) {
+      if ((raw[r] || []).some((c) => /^jumlah\s+ats$/i.test(String(c || "")))) {
+        subHeaderRowIdx = r;
+        break;
+      }
+    }
+    if (subHeaderRowIdx === -1 || subHeaderRowIdx === 0) {
+      throw new Error('Baris sub-header "Jumlah ATS" tidak ditemukan di sheet "' + sheetName + '".');
+    }
+    const subHeaderRow = raw[subHeaderRowIdx] || [];
+    const dateHeaderRow = raw[subHeaderRowIdx - 1] || [];
     const dates = [];
-    for (let col = 3; col < dateHeaderRow.length; col += 3) {
-      if (dateHeaderRow[col]) dates.push({ label: String(dateHeaderRow[col]).trim(), col });
+    for (let col = 0; col < subHeaderRow.length; col++) {
+      if (/^jumlah\s+ats$/i.test(String(subHeaderRow[col] || "")) && dateHeaderRow[col]) {
+        dates.push({ label: String(dateHeaderRow[col]).trim(), col });
+      }
     }
     if (dates.length === 0) throw new Error('Header tanggal tidak ditemukan di sheet "' + sheetName + '".');
 
@@ -101,7 +119,7 @@
         belum: parseCount(row[d.col + 2]),
       }));
 
-    for (let i = 5; i < raw.length; i++) {
+    for (let i = subHeaderRowIdx + 1; i < raw.length; i++) {
       const row = raw[i];
       if (!row || row.length === 0) continue;
       const kabkota = row[1];
@@ -133,10 +151,10 @@
   /** Baca sheet "Alasan Verifikasi": per kecamatan, jumlah kasus Sudah
    * Diverval (gabungan DO+LTM+BPB) tiap kode alasan k1-k26 — strukturnya
    * mirip loadCategorySheet (baris subtotal "Jumlah <nama>" & "JUMLAH
-   * PROVINSI NTB") tapi cuma 1 snapshot (tanpa deret tanggal). Kolom kode
+   * PROVINSI NTB") tapi cuma 1 snapshot (tanpa deret tanggal). Baris kode
    * alasan & kolom total "Jumlah Sudah Verifikasi" dicari lewat isi
-   * headernya, bukan indeks tetap, supaya tahan kalau urutan/kolomnya
-   * sedikit berubah. */
+   * selnya (bukan indeks baris/kolom tetap), supaya tahan kalau gviz
+   * melewati baris kosong di awal sheet atau urutannya sedikit berubah. */
   async function loadAlasanSheet() {
     const sheetName = CFG.ATS_ALASAN_SHEET;
     const cacheKey = "atsData:" + CFG.ATS_SHEET_ID + ":" + sheetName;
@@ -146,19 +164,34 @@
     const raw = await Gviz.fetchSheetRaw(CFG.ATS_SHEET_ID, sheetName);
     if (raw.length < 6) throw new Error('Sheet "' + sheetName + '" kosong / format tidak dikenali.');
 
-    const titleHeaderRow = raw[3] || [];
-    const codeHeaderRow = raw[4] || [];
-    let totalCol = -1;
-    for (let i = 0; i < titleHeaderRow.length; i++) {
-      if (/jumlah\s+sudah\s+verifikasi/i.test(String(titleHeaderRow[i] || ""))) {
-        totalCol = i;
+    // Baris kode alasan (k1, k2, ...) dicari dari ISI selnya (baris dgn
+    // >=2 sel berformat "k<angka>"), bukan indeks baris tetap, supaya
+    // tahan kalau gviz melewati baris kosong di awal sheet. Kolom total
+    // "Jumlah Sudah Verifikasi" dicari di seluruh sheet dgn cara sama.
+    let codeHeaderRowIdx = -1;
+    const reasonCols = [];
+    for (let r = 0; r < raw.length; r++) {
+      const row = raw[r] || [];
+      const cols = [];
+      for (let c = 0; c < row.length; c++) {
+        const code = String(row[c] || "").trim();
+        if (/^k\d+$/i.test(code)) cols.push({ code: code.toLowerCase(), col: c });
+      }
+      if (cols.length >= 2) {
+        codeHeaderRowIdx = r;
+        reasonCols.push(...cols);
         break;
       }
     }
-    const reasonCols = [];
-    for (let i = 3; i < codeHeaderRow.length; i++) {
-      const code = String(codeHeaderRow[i] || "").trim();
-      if (/^k\d+$/i.test(code)) reasonCols.push({ code: code.toLowerCase(), col: i });
+    let totalCol = -1;
+    for (let r = 0; r < raw.length && totalCol === -1; r++) {
+      const row = raw[r] || [];
+      for (let c = 0; c < row.length; c++) {
+        if (/jumlah\s+sudah\s+verifikasi/i.test(String(row[c] || ""))) {
+          totalCol = c;
+          break;
+        }
+      }
     }
     if (reasonCols.length === 0 || totalCol === -1) {
       throw new Error('Header kode alasan / kolom total tidak ditemukan di sheet "' + sheetName + '".');
@@ -174,7 +207,7 @@
     const subtotalByKabkota = {};
     let provinceTotal = null;
 
-    for (let i = 5; i < raw.length; i++) {
+    for (let i = codeHeaderRowIdx + 1; i < raw.length; i++) {
       const row = raw[i];
       if (!row || row.length === 0) continue;
       const kabkota = row[1];
