@@ -26,6 +26,8 @@
     alasan: null, // { reasonCodes, kecamatanRows, subtotalByKabkota, provinceTotal }
     kabupatenList: [], // urutan kemunculan pertama di sheet "Gabungan"
     kabupatenKey: PROVINCE_VALUE,
+    pctMin: 0, // filter garis bilangan % Sudah Diverval, tabel Detail per Kecamatan
+    pctMax: 100,
   };
 
   function setStatus(msg, isError) {
@@ -311,6 +313,51 @@
       state.kabupatenKey = select.value;
       render();
     });
+  }
+
+  /** Filter garis bilangan (dual-handle range slider) 0-100% utk kolom
+   * "% Terverval" di tabel Detail per Kecamatan — 2 <input type=range>
+   * ditumpuk di atas 1 track visual (lihat .range-slider di css/style.css).
+   * Nilai minHandle tidak boleh melewati maxHandle & sebaliknya, supaya
+   * rentangnya selalu valid. */
+  function wirePctRangeFilter() {
+    const minInput = el("ats-pct-min");
+    const maxInput = el("ats-pct-max");
+    const fill = el("ats-pct-fill");
+    const valueLabel = el("ats-pct-range-value");
+    const resetBtn = el("ats-pct-reset");
+
+    function updateUI() {
+      const lo = Math.min(state.pctMin, state.pctMax);
+      const hi = Math.max(state.pctMin, state.pctMax);
+      fill.style.left = lo + "%";
+      fill.style.right = 100 - hi + "%";
+      valueLabel.textContent = lo === 0 && hi === 100 ? "Semua (0% - 100%)" : lo + "% - " + hi + "%";
+      resetBtn.disabled = lo === 0 && hi === 100;
+    }
+
+    minInput.addEventListener("input", () => {
+      state.pctMin = Math.min(Number(minInput.value), state.pctMax);
+      minInput.value = String(state.pctMin);
+      updateUI();
+      renderKecamatanTable();
+    });
+    maxInput.addEventListener("input", () => {
+      state.pctMax = Math.max(Number(maxInput.value), state.pctMin);
+      maxInput.value = String(state.pctMax);
+      updateUI();
+      renderKecamatanTable();
+    });
+    resetBtn.addEventListener("click", () => {
+      state.pctMin = 0;
+      state.pctMax = 100;
+      minInput.value = "0";
+      maxInput.value = "100";
+      updateUI();
+      renderKecamatanTable();
+    });
+
+    updateUI();
   }
 
   function totalsFor(categoryKey, kabupatenKey) {
@@ -681,9 +728,17 @@
     const tbody = el("ats-body");
     tbody.innerHTML = "";
 
-    const rows = state.categories.gabungan.kecamatanRows.filter(
-      (r) => state.kabupatenKey === PROVINCE_VALUE || r.kabkota === state.kabupatenKey
-    );
+    const filterIsActive = state.pctMin > 0 || state.pctMax < 100;
+    const rows = state.categories.gabungan.kecamatanRows
+      .filter((r) => state.kabupatenKey === PROVINCE_VALUE || r.kabkota === state.kabupatenKey)
+      .filter((r) => {
+        if (!filterIsActive) return true;
+        const latest = r.series[r.series.length - 1];
+        const p = pct(latest.verval || 0, latest.jumlah || 0);
+        return p !== null && p >= state.pctMin && p <= state.pctMax;
+      });
+
+    el("ats-pct-count").textContent = filterIsActive ? rows.length.toLocaleString("id-ID") + " kecamatan" : "";
 
     for (const r of rows) {
       const latest = r.series[r.series.length - 1];
@@ -762,6 +817,7 @@
       el("ats-updated").textContent = gabungan.subtitleRow || "";
 
       renderKabupatenSelect();
+      wirePctRangeFilter();
       render();
       setStatus("");
     } catch (err) {

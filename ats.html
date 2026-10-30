@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Anak Tidak Sekolah (ATS)</title>
-  <link rel="stylesheet" href="css/style.css?v=62" />
+  <link rel="stylesheet" href="css/style.css?v=63" />
 </head>
 <body>
   <header class="app-header">
@@ -51,7 +51,32 @@
     </section>
 
     <section class="panel" aria-label="Detail per kecamatan">
-      <h2>Detail per Kecamatan &mdash; Gabungan (DO + LTM + BPB)</h2>
+      <div class="panel-title-row">
+        <h2>Detail per Kecamatan &mdash; Gabungan (DO + LTM + BPB)</h2>
+        <div class="panel-title-actions">
+          <span id="ats-pct-count" class="result-count"></span>
+          <button id="ats-pct-reset" class="btn-secondary">Reset Filter</button>
+        </div>
+      </div>
+      <div class="range-filter">
+        <div class="range-filter-label">
+          <span>Filter % Sudah Diverval</span>
+          <span id="ats-pct-range-value" class="range-filter-value"></span>
+        </div>
+        <div class="range-slider" id="ats-pct-slider">
+          <div class="range-slider-track"></div>
+          <div class="range-slider-fill" id="ats-pct-fill"></div>
+          <input type="range" id="ats-pct-min" min="0" max="100" step="1" value="0" aria-label="Persentase minimum" />
+          <input type="range" id="ats-pct-max" min="0" max="100" step="1" value="100" aria-label="Persentase maksimum" />
+        </div>
+        <div class="range-slider-scale">
+          <span>0%</span>
+          <span>25%</span>
+          <span>50%</span>
+          <span>75%</span>
+          <span>100%</span>
+        </div>
+      </div>
       <div class="table-scroll">
         <table id="ats-table" hidden>
           <colgroup>
@@ -80,10 +105,10 @@
     </section>
   </main>
 
-  <script src="js/config.js?v=62"></script>
-  <script src="js/gviz.js?v=62"></script>
-  <script src="js/shared.js?v=62"></script>
-  <script src="js/cache.js?v=62"></script>
-  <script src="js/ats.js?v=62"></script>
+  <script src="js/config.js?v=63"></script>
+  <script src="js/gviz.js?v=63"></script>
+  <script src="js/shared.js?v=63"></script>
+  <script src="js/cache.js?v=63"></script>
+  <script src="js/ats.js?v=63"></script>
 </body>
 </html>
