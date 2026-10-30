@@ -205,39 +205,34 @@
   /** Baca sheet "Alasan Verifikasi": per kecamatan, jumlah kasus Sudah
    * Diverval (gabungan DO+LTM+BPB) tiap kode alasan k1-k26 — strukturnya
    * mirip loadCategorySheet (baris subtotal "Jumlah <nama>" & "JUMLAH
-   * PROVINSI NTB") tapi cuma 1 snapshot (tanpa deret tanggal). Baris 4
-   * (label "...Jumlah Sudah Verifikasi") & baris 5 (kode k1-k26) diambil
-   * SATU PER SATU (bukan sekaligus spt loadCategorySheet) — baris 4 di
-   * sheet ini sebagian besar kosong (cuma 2 sel terisi dari puluhan
-   * kolom, beda dari baris tanggal di sheet kategori yg terisi penuh),
-   * dan pola "kebanyakan kosong" itu ternyata membuat gviz mencampur
-   * labelnya dgn baris lain kalau diambil bersamaan — diambil terpisah
-   * per baris spy gviz tidak salah menggabungkannya. */
+   * PROVINSI NTB") tapi cuma 1 snapshot (tanpa deret tanggal). Beda dgn
+   * sheet kategori, sheet ini cuma punya SATU baris header (baris 4) yg
+   * sekaligus berisi "No"/"Kabupaten/Kota"/"Kecamatan", kode k1-k26, DAN
+   * label kolom total "Jumlah Sudah Verifikasi" di ujung kanan — baris 5
+   * kosong (spacer, menyamakan posisi baris data dgn sheet kategori yg
+   * mulai di baris 6). Diambil lewat 1 fetch baris tunggal (terbukti
+   * andal drpd range multi-baris yg rawan tercampur gviz). */
   async function loadAlasanSheet() {
     const sheetName = CFG.ATS_ALASAN_SHEET;
     const cacheKey = "atsData:" + CFG.ATS_SHEET_ID + ":" + sheetName;
     const cached = window.DataCache && window.DataCache.readFresh(cacheKey, CACHE_TTL_MS);
     if (cached) return cached;
 
-    const TITLE_HEADER_ROW = 4;
-    const CODE_HEADER_ROW = 5;
-    const titleHeaderRaw = await Gviz.fetchRange(CFG.ATS_SHEET_ID, sheetName, "A" + TITLE_HEADER_ROW + ":" + WIDE_COL + TITLE_HEADER_ROW);
-    const codeHeaderRaw = await Gviz.fetchRange(CFG.ATS_SHEET_ID, sheetName, "A" + CODE_HEADER_ROW + ":" + WIDE_COL + CODE_HEADER_ROW);
-    const titleRow = titleHeaderRaw[0] || [];
-    const codeRow = codeHeaderRaw[0] || [];
+    const ALASAN_HEADER_ROW = 4;
+    const headerRowRaw = await Gviz.fetchRange(CFG.ATS_SHEET_ID, sheetName, "A" + ALASAN_HEADER_ROW + ":" + WIDE_COL + ALASAN_HEADER_ROW);
+    const headerRow = headerRowRaw[0] || [];
 
-    // Kode alasan (k1, k2, ...) dicari dari isi baris kode, kolom total
-    // "Jumlah Sudah Verifikasi" dari isi baris judul — dicari lewat isi
-    // selnya (bukan indeks kolom tetap), supaya tahan kalau urutan
-    // kolomnya sedikit berbeda dari asumsi di atas.
+    // Kode alasan (k1, k2, ...) & kolom total "Jumlah Sudah Verifikasi"
+    // dicari dari isi selnya (bukan indeks kolom tetap), supaya tahan
+    // kalau urutan kolomnya sedikit berbeda dari asumsi di atas.
     const reasonCols = [];
-    for (let c = 0; c < codeRow.length; c++) {
-      const code = cellText(codeRow[c]);
+    for (let c = 0; c < headerRow.length; c++) {
+      const code = cellText(headerRow[c]);
       if (/^k\d+$/i.test(code)) reasonCols.push({ code: code.toLowerCase(), col: c });
     }
     let totalCol = -1;
-    for (let c = 0; c < titleRow.length; c++) {
-      if (/jumlah\s+sudah\s+verifikasi/i.test(cellText(titleRow[c]))) {
+    for (let c = 0; c < headerRow.length; c++) {
+      if (/jumlah\s+sudah\s+verifikasi/i.test(cellText(headerRow[c]))) {
         totalCol = c;
         break;
       }
@@ -251,13 +246,9 @@
           ", totalCol=" +
           totalCol +
           "). Baris " +
-          TITLE_HEADER_ROW +
+          ALASAN_HEADER_ROW +
           ": " +
-          describeRawSample([titleRow], 1, 10) +
-          " Baris " +
-          CODE_HEADER_ROW +
-          ": " +
-          describeRawSample([codeRow], 1, 10)
+          describeRawSample([headerRow], 1, 30)
       );
     }
 
