@@ -23,6 +23,7 @@
 
   const state = {
     categories: {}, // key -> { dates, kecamatanRows, subtotalByKabkota, provinceTotal }
+    alasan: null, // { reasonCodes, kecamatanRows, subtotalByKabkota, provinceTotal }
     kabupatenList: [], // urutan kemunculan pertama di sheet "Gabungan"
     kabupatenKey: PROVINCE_VALUE,
   };
@@ -125,6 +126,74 @@
 
     const subtitleRow = raw[1] && raw[1][0] ? String(raw[1][0]) : "";
     const result = { dates, kecamatanRows, subtotalByKabkota, provinceTotal, subtitleRow };
+    if (window.DataCache) window.DataCache.write(cacheKey, result);
+    return result;
+  }
+
+  /** Baca sheet "Alasan Verifikasi": per kecamatan, jumlah kasus Sudah
+   * Diverval (gabungan DO+LTM+BPB) tiap kode alasan k1-k26 — strukturnya
+   * mirip loadCategorySheet (baris subtotal "Jumlah <nama>" & "JUMLAH
+   * PROVINSI NTB") tapi cuma 1 snapshot (tanpa deret tanggal). Kolom kode
+   * alasan & kolom total "Jumlah Sudah Verifikasi" dicari lewat isi
+   * headernya, bukan indeks tetap, supaya tahan kalau urutan/kolomnya
+   * sedikit berubah. */
+  async function loadAlasanSheet() {
+    const sheetName = CFG.ATS_ALASAN_SHEET;
+    const cacheKey = "atsData:" + CFG.ATS_SHEET_ID + ":" + sheetName;
+    const cached = window.DataCache && window.DataCache.readFresh(cacheKey, CACHE_TTL_MS);
+    if (cached) return cached;
+
+    const raw = await Gviz.fetchSheetRaw(CFG.ATS_SHEET_ID, sheetName);
+    if (raw.length < 6) throw new Error('Sheet "' + sheetName + '" kosong / format tidak dikenali.');
+
+    const titleHeaderRow = raw[3] || [];
+    const codeHeaderRow = raw[4] || [];
+    let totalCol = -1;
+    for (let i = 0; i < titleHeaderRow.length; i++) {
+      if (/jumlah\s+sudah\s+verifikasi/i.test(String(titleHeaderRow[i] || ""))) {
+        totalCol = i;
+        break;
+      }
+    }
+    const reasonCols = [];
+    for (let i = 3; i < codeHeaderRow.length; i++) {
+      const code = String(codeHeaderRow[i] || "").trim();
+      if (/^k\d+$/i.test(code)) reasonCols.push({ code: code.toLowerCase(), col: i });
+    }
+    if (reasonCols.length === 0 || totalCol === -1) {
+      throw new Error('Header kode alasan / kolom total tidak ditemukan di sheet "' + sheetName + '".');
+    }
+
+    const countsFor = (row) => {
+      const counts = {};
+      for (const rc of reasonCols) counts[rc.code] = parseCount(row[rc.col]) || 0;
+      return { counts, total: parseCount(row[totalCol]) || 0 };
+    };
+
+    const kecamatanRows = [];
+    const subtotalByKabkota = {};
+    let provinceTotal = null;
+
+    for (let i = 5; i < raw.length; i++) {
+      const row = raw[i];
+      if (!row || row.length === 0) continue;
+      const kabkota = row[1];
+      const kecamatan = row[2];
+      if (isBlank(kabkota)) continue;
+
+      const kabkotaText = String(kabkota).trim();
+      if (kabkotaText === "JUMLAH PROVINSI NTB") {
+        provinceTotal = countsFor(row);
+      } else if (isBlank(kecamatan) && /^Jumlah\s+/i.test(kabkotaText)) {
+        const nama = kabkotaText.replace(/^Jumlah\s+/i, "").trim();
+        subtotalByKabkota[nama] = countsFor(row);
+      } else if (!isBlank(kecamatan)) {
+        const { counts, total } = countsFor(row);
+        kecamatanRows.push({ kabkota: kabkotaText, kecamatan: String(kecamatan).trim(), counts, total });
+      }
+    }
+
+    const result = { reasonCodes: reasonCols.map((rc) => rc.code), kecamatanRows, subtotalByKabkota, provinceTotal };
     if (window.DataCache) window.DataCache.write(cacheKey, result);
     return result;
   }
@@ -418,6 +487,79 @@
   }
 
   // ---------------------------------------------------------------------
+  // Render: grafik batang Alasan Verifikasi
+  // ---------------------------------------------------------------------
+
+  /** Grafik batang horizontal peringkat alasan verifikasi (Sudah Diverval,
+   * gabungan DO+LTM+BPB) utk wilayah terpilih — diurutkan besar ke kecil,
+   * alasan dgn 0 kasus di wilayah itu disembunyikan supaya daftarnya tetap
+   * relevan. Batang horizontal dipilih (bukan grafik garis spt Tren
+   * Verifikasi) krn ini perbandingan ANTAR KATEGORI pada satu snapshot,
+   * bukan satu nilai dari waktu ke waktu — dan labelnya (alasan) berupa
+   * teks panjang yang lebih mudah dibaca mendatar drpd di sumbu-x tegak. */
+  function renderReasonChart() {
+    const container = el("ats-reason-chart");
+    container.innerHTML = "";
+
+    const entry =
+      state.kabupatenKey === PROVINCE_VALUE
+        ? state.alasan.provinceTotal
+        : state.alasan.subtotalByKabkota[state.kabupatenKey];
+
+    if (!entry) {
+      const empty = document.createElement("p");
+      empty.className = "muted small";
+      empty.textContent = "Data alasan verifikasi tidak tersedia utk wilayah ini.";
+      container.appendChild(empty);
+      return;
+    }
+
+    const items = state.alasan.reasonCodes
+      .map((code) => ({
+        code,
+        label: CFG.ATS_REASON_LABELS[code] || code,
+        count: entry.counts[code] || 0,
+      }))
+      .filter((it) => it.count > 0)
+      .sort((a, b) => b.count - a.count);
+
+    if (items.length === 0) {
+      const empty = document.createElement("p");
+      empty.className = "muted small";
+      empty.textContent = "Belum ada kasus terverifikasi dgn alasan tercatat utk wilayah ini.";
+      container.appendChild(empty);
+      return;
+    }
+
+    const maxCount = items[0].count;
+    for (const it of items) {
+      const row = document.createElement("div");
+      row.className = "reason-bar-row";
+
+      const label = document.createElement("span");
+      label.className = "reason-bar-label";
+      label.textContent = it.code + " · " + it.label;
+      label.title = it.code + " — " + it.label;
+
+      const track = document.createElement("div");
+      track.className = "reason-bar-track";
+      const fill = document.createElement("div");
+      fill.className = "reason-bar-fill";
+      fill.style.width = ((it.count / maxCount) * 100).toFixed(1) + "%";
+      track.appendChild(fill);
+
+      const value = document.createElement("span");
+      value.className = "reason-bar-value";
+      value.textContent = it.count.toLocaleString("id-ID");
+
+      row.appendChild(label);
+      row.appendChild(track);
+      row.appendChild(value);
+      container.appendChild(row);
+    }
+  }
+
+  // ---------------------------------------------------------------------
   // Render: tabel detail per kecamatan (kategori Gabungan)
   // ---------------------------------------------------------------------
 
@@ -480,16 +622,18 @@
   function render() {
     renderSummaryCards();
     renderTrendChart();
+    renderReasonChart();
     renderKecamatanTable();
   }
 
   async function main() {
     try {
-      setStatus("Membaca data ATS (DO, LTM, BPB, Gabungan)...", false);
+      setStatus("Membaca data ATS (DO, LTM, BPB, Gabungan, Alasan Verifikasi)...", false);
 
       for (const category of CFG.ATS_CATEGORIES) {
         state.categories[category.key] = await loadCategorySheet(category.sheet);
       }
+      state.alasan = await loadAlasanSheet();
 
       const gabungan = state.categories.gabungan;
       const kabupatenList = [];

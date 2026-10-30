@@ -499,6 +499,46 @@ body {
   white-space: nowrap;
 }
 
+/* Grafik batang horizontal peringkat (mis. Alasan Verifikasi ATS, banyak
+   kategori dgn label teks panjang) — satu warna aksen konsisten per batang
+   karena cuma mengurutkan besaran, bukan membandingkan beberapa seri. */
+.reason-bar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.reason-bar-row {
+  display: grid;
+  grid-template-columns: minmax(140px, 300px) 1fr auto;
+  align-items: center;
+  gap: 10px;
+}
+.reason-bar-label {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.reason-bar-track {
+  background: var(--surface-2);
+  border-radius: 4px;
+  height: 14px;
+  overflow: hidden;
+}
+.reason-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 4px 0 0 4px;
+  min-width: 2px;
+}
+.reason-bar-value {
+  font-size: 0.82rem;
+  font-weight: 600;
+  min-width: 52px;
+  text-align: right;
+}
+
 .table-scroll {
   overflow-x: auto;
 }

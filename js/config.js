@@ -135,4 +135,38 @@ window.DASHBOARD_CONFIG = {
     { key: "ltm", label: "Lulus Tidak Melanjutkan (LTM)", sheet: "LTM" },
     { key: "bpb", label: "Belum Pernah Bersekolah (BPB)", sheet: "BPB" },
   ],
+
+  // Sheet "Alasan Verifikasi": per kecamatan, jumlah kasus (sudah
+  // diverifikasi, gabungan DO+LTM+BPB) utk tiap kode alasan k1-k26 (k14 &
+  // k20 tak dipakai situs ATS) — strukturnya mirip ATS_CATEGORIES (baris
+  // subtotal "Jumlah <kab/kota>" & "JUMLAH PROVINSI NTB") tapi tanpa
+  // dimensi tanggal, cuma 1 snapshot terbaru per kode alasan + 1 kolom
+  // total "Jumlah Sudah Verifikasi" (lihat js/ats.js).
+  ATS_ALASAN_SHEET: "Alasan Verifikasi",
+  ATS_REASON_LABELS: {
+    k1: "Tidak mau bersekolah",
+    k2: "Tidak ada biaya",
+    k3: "Sekolah jauh dari rumah",
+    k4: "Sudah cukup dengan tingkat pendidikan yang dimiliki saat ini",
+    k5: "Menikah / mengurus rumah tangga",
+    k6: "Mengalami kekerasan/perundungan/trauma di sekolah",
+    k7: "Bekerja",
+    k8: "Pengaruh lingkungan/teman",
+    k9: "Beranggapan sekolah tidak penting",
+    k10: "Tidak memiliki seragam sekolah",
+    k11: "Tidak memiliki Akta Kelahiran",
+    k12: "Masalah Kesehatan / Penyandang Disabilitas",
+    k13: "Lainnya",
+    k15: "Dikeluarkan",
+    k16: "Mengundurkan Diri",
+    k17: "Anak Tidak Ditemukan",
+    k18: "Melanjutkan ke Luar Negeri",
+    k19: "Melanjutkan ke Pondok Pesantren atau Lainnya",
+    k21: "Meninggal Dunia",
+    k22: "Bersekolah",
+    k23: "Pindah Domisili",
+    k24: "Sudah Tamat SMA/Sederajat",
+    k25: "Bukan Penduduk Desa Tersebut",
+    k26: "Bukan ATS Usia 6-18",
+  },
 };
