@@ -92,6 +92,21 @@
     return CRITICAL;
   }
 
+  // Struktur tetap tiap sheet kategori (dicek langsung lewat Sheets API,
+  // terlepas dari gviz): baris 1 judul, 2 subjudul, 3 kosong, 4 header
+  // tanggal, 5 sub-header (Jumlah ATS/Sudah Diverval/Belum Diverval), data
+  // mulai baris 6. HEADER_END_ROW & WIDE_COL dipakai supaya header &
+  // data diambil lewat 2 query gviz TERPISAH (bukan 1 query utk seluruh
+  // sheet) — gviz menyimpulkan tipe tiap kolom dari SELURUH baris yang
+  // di-query sekaligus, jadi kolom tanggal (isinya didominasi angka di
+  // baris data) ikut membuat teks header di baris yg sama kolomnya
+  // (mis. "Jumlah ATS") berubah jadi null kalau header & data diminta
+  // dalam 1 query yg sama; dipisah supaya masing2 query isinya seragam
+  // (header = teks semua, data = angka semua) dan tidak saling mencemari.
+  const HEADER_END_ROW = 5;
+  const DATA_END_ROW = 400; // margin aman di atas ~150 baris data yg ada
+  const WIDE_COL = "ZZ"; // margin aman utk kolom tanggal yg terus bertambah
+
   /** Baca 1 sheet kategori (Gabungan/DO/LTM/BPB) -> daftar tanggal, baris
    * tiap kecamatan, subtotal tiap kabupaten/kota, dan total provinsi. */
   async function loadCategorySheet(sheetName) {
@@ -99,32 +114,33 @@
     const cached = window.DataCache && window.DataCache.readFresh(cacheKey, CACHE_TTL_MS);
     if (cached) return cached;
 
-    const raw = await Gviz.fetchSheetRaw(CFG.ATS_SHEET_ID, sheetName);
-    if (raw.length < 6) {
+    const headerRaw = await Gviz.fetchRange(CFG.ATS_SHEET_ID, sheetName, "A1:" + WIDE_COL + HEADER_END_ROW);
+    if (headerRaw.length < HEADER_END_ROW) {
       throw new Error(
-        'Sheet "' + sheetName + '" kosong / format tidak dikenali (' + raw.length + ' baris). ' + describeRawSample(raw, 6, 6)
+        'Sheet "' + sheetName + '" kosong / format tidak dikenali (' + headerRaw.length + ' baris header). ' +
+          describeRawSample(headerRaw, HEADER_END_ROW, 6)
       );
     }
 
     // Baris & kolom tanggal dicari dari ISI selnya (baris sub-header
     // "Jumlah ATS" menandai kolom pertama tiap grup 3 kolom per tanggal,
     // labelnya ada di baris persis di atasnya) — bukan dari indeks baris
-    // tetap, supaya tahan kalau gviz melewati baris kosong di awal sheet
-    // (jumlah baris sebelum data bisa beda2 antar sheet/waktu akses).
+    // tetap, supaya tahan kalau susunan barisnya sedikit berbeda dari
+    // asumsi di atas.
     let subHeaderRowIdx = -1;
-    for (let r = 0; r < raw.length; r++) {
-      if ((raw[r] || []).some((c) => /jumlah\s+ats/i.test(cellText(c)))) {
+    for (let r = 0; r < headerRaw.length; r++) {
+      if ((headerRaw[r] || []).some((c) => /jumlah\s+ats/i.test(cellText(c)))) {
         subHeaderRowIdx = r;
         break;
       }
     }
     if (subHeaderRowIdx === -1 || subHeaderRowIdx === 0) {
       throw new Error(
-        'Baris sub-header "Jumlah ATS" tidak ditemukan di sheet "' + sheetName + '". ' + describeRawSample(raw, 6, 8)
+        'Baris sub-header "Jumlah ATS" tidak ditemukan di sheet "' + sheetName + '". ' + describeRawSample(headerRaw, HEADER_END_ROW, 8)
       );
     }
-    const subHeaderRow = raw[subHeaderRowIdx] || [];
-    const dateHeaderRow = raw[subHeaderRowIdx - 1] || [];
+    const subHeaderRow = headerRaw[subHeaderRowIdx] || [];
+    const dateHeaderRow = headerRaw[subHeaderRowIdx - 1] || [];
     const dates = [];
     for (let col = 0; col < subHeaderRow.length; col++) {
       if (/jumlah\s+ats/i.test(cellText(subHeaderRow[col])) && dateHeaderRow[col]) {
@@ -142,6 +158,9 @@
       );
     }
 
+    const dataStartRow = HEADER_END_ROW + 1; // 1-indexed: baris persis setelah blok header
+    const raw = await Gviz.fetchRange(CFG.ATS_SHEET_ID, sheetName, "A" + dataStartRow + ":" + WIDE_COL + DATA_END_ROW);
+
     const kecamatanRows = [];
     const subtotalByKabkota = {};
     let provinceTotal = null;
@@ -154,7 +173,7 @@
         belum: parseCount(row[d.col + 2]),
       }));
 
-    for (let i = subHeaderRowIdx + 1; i < raw.length; i++) {
+    for (let i = 0; i < raw.length; i++) {
       const row = raw[i];
       if (!row || row.length === 0) continue;
       const kabkota = row[1];
@@ -177,7 +196,7 @@
       }
     }
 
-    const subtitleRow = raw[1] && raw[1][0] ? String(raw[1][0]) : "";
+    const subtitleRow = headerRaw[1] && headerRaw[1][0] ? String(headerRaw[1][0]) : "";
     const result = { dates, kecamatanRows, subtotalByKabkota, provinceTotal, subtitleRow };
     if (window.DataCache) window.DataCache.write(cacheKey, result);
     return result;
@@ -196,21 +215,26 @@
     const cached = window.DataCache && window.DataCache.readFresh(cacheKey, CACHE_TTL_MS);
     if (cached) return cached;
 
-    const raw = await Gviz.fetchSheetRaw(CFG.ATS_SHEET_ID, sheetName);
-    if (raw.length < 6) {
+    // Header & data diambil lewat 2 query gviz terpisah — lihat komentar
+    // panjang di atas loadCategorySheet utk alasannya (tipe kolom yg
+    // disimpulkan gviz dari campuran teks header + angka data dalam 1
+    // query yg sama bisa membuat teks headernya sendiri jadi null).
+    const headerRaw = await Gviz.fetchRange(CFG.ATS_SHEET_ID, sheetName, "A1:" + WIDE_COL + HEADER_END_ROW);
+    if (headerRaw.length < HEADER_END_ROW) {
       throw new Error(
-        'Sheet "' + sheetName + '" kosong / format tidak dikenali (' + raw.length + ' baris). ' + describeRawSample(raw, 6, 6)
+        'Sheet "' + sheetName + '" kosong / format tidak dikenali (' + headerRaw.length + ' baris header). ' +
+          describeRawSample(headerRaw, HEADER_END_ROW, 6)
       );
     }
 
     // Baris kode alasan (k1, k2, ...) dicari dari ISI selnya (baris dgn
     // >=2 sel berformat "k<angka>"), bukan indeks baris tetap, supaya
-    // tahan kalau gviz melewati baris kosong di awal sheet. Kolom total
-    // "Jumlah Sudah Verifikasi" dicari di seluruh sheet dgn cara sama.
+    // tahan kalau susunan barisnya sedikit berbeda dari asumsi di atas.
+    // Kolom total "Jumlah Sudah Verifikasi" dicari dgn cara sama.
     let codeHeaderRowIdx = -1;
     const reasonCols = [];
-    for (let r = 0; r < raw.length; r++) {
-      const row = raw[r] || [];
+    for (let r = 0; r < headerRaw.length; r++) {
+      const row = headerRaw[r] || [];
       const cols = [];
       for (let c = 0; c < row.length; c++) {
         const code = cellText(row[c]);
@@ -223,8 +247,8 @@
       }
     }
     let totalCol = -1;
-    for (let r = 0; r < raw.length && totalCol === -1; r++) {
-      const row = raw[r] || [];
+    for (let r = 0; r < headerRaw.length && totalCol === -1; r++) {
+      const row = headerRaw[r] || [];
       for (let c = 0; c < row.length; c++) {
         if (/jumlah\s+sudah\s+verifikasi/i.test(cellText(row[c]))) {
           totalCol = c;
@@ -241,7 +265,7 @@
           ", totalCol=" +
           totalCol +
           "). " +
-          describeRawSample(raw, 6, 10)
+          describeRawSample(headerRaw, HEADER_END_ROW, 10)
       );
     }
 
@@ -251,11 +275,14 @@
       return { counts, total: parseCount(row[totalCol]) || 0 };
     };
 
+    const dataStartRow = HEADER_END_ROW + 1;
+    const raw = await Gviz.fetchRange(CFG.ATS_SHEET_ID, sheetName, "A" + dataStartRow + ":" + WIDE_COL + DATA_END_ROW);
+
     const kecamatanRows = [];
     const subtotalByKabkota = {};
     let provinceTotal = null;
 
-    for (let i = codeHeaderRowIdx + 1; i < raw.length; i++) {
+    for (let i = 0; i < raw.length; i++) {
       const row = raw[i];
       if (!row || row.length === 0) continue;
       const kabkota = row[1];
