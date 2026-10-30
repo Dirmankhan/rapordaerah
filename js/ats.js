@@ -51,6 +51,18 @@
     return String(v || "").trim();
   }
 
+  /** Cuplikan baris mentah hasil fetch Gviz, disisipkan ke pesan error saat
+   * deteksi header gagal — supaya kalau sheet sumber berubah format lagi
+   * (atau ada kuirk lain yang belum ketebak), isi sel sebenarnya (termasuk
+   * karakter tak kasat mata, lewat JSON.stringify) langsung kelihatan di
+   * kotak status tanpa perlu akses sheet secara langsung utk debug. */
+  function describeRawSample(raw, maxRows, maxCols) {
+    return raw
+      .slice(0, maxRows)
+      .map((row, i) => "baris" + i + ":[" + (row || []).slice(0, maxCols).map((c) => JSON.stringify(c)).join(",") + "]")
+      .join(" ");
+  }
+
   /** "1,148" / 1148 -> 1148. Angka ATS berupa bilangan bulat; koma di sheet
    * ini pemisah ribuan (bukan desimal seperti di data rapor lain). */
   function parseCount(v) {
@@ -88,7 +100,11 @@
     if (cached) return cached;
 
     const raw = await Gviz.fetchSheetRaw(CFG.ATS_SHEET_ID, sheetName);
-    if (raw.length < 6) throw new Error('Sheet "' + sheetName + '" kosong / format tidak dikenali.');
+    if (raw.length < 6) {
+      throw new Error(
+        'Sheet "' + sheetName + '" kosong / format tidak dikenali (' + raw.length + ' baris). ' + describeRawSample(raw, 6, 6)
+      );
+    }
 
     // Baris & kolom tanggal dicari dari ISI selnya (baris sub-header
     // "Jumlah ATS" menandai kolom pertama tiap grup 3 kolom per tanggal,
@@ -103,7 +119,9 @@
       }
     }
     if (subHeaderRowIdx === -1 || subHeaderRowIdx === 0) {
-      throw new Error('Baris sub-header "Jumlah ATS" tidak ditemukan di sheet "' + sheetName + '".');
+      throw new Error(
+        'Baris sub-header "Jumlah ATS" tidak ditemukan di sheet "' + sheetName + '". ' + describeRawSample(raw, 6, 8)
+      );
     }
     const subHeaderRow = raw[subHeaderRowIdx] || [];
     const dateHeaderRow = raw[subHeaderRowIdx - 1] || [];
@@ -113,7 +131,16 @@
         dates.push({ label: cellText(dateHeaderRow[col]), col });
       }
     }
-    if (dates.length === 0) throw new Error('Header tanggal tidak ditemukan di sheet "' + sheetName + '".');
+    if (dates.length === 0) {
+      throw new Error(
+        'Header tanggal tidak ditemukan di sheet "' +
+          sheetName +
+          '". Baris sub-header ada di indeks ' +
+          subHeaderRowIdx +
+          ": " +
+          describeRawSample([dateHeaderRow, subHeaderRow], 2, 8)
+      );
+    }
 
     const kecamatanRows = [];
     const subtotalByKabkota = {};
@@ -170,7 +197,11 @@
     if (cached) return cached;
 
     const raw = await Gviz.fetchSheetRaw(CFG.ATS_SHEET_ID, sheetName);
-    if (raw.length < 6) throw new Error('Sheet "' + sheetName + '" kosong / format tidak dikenali.');
+    if (raw.length < 6) {
+      throw new Error(
+        'Sheet "' + sheetName + '" kosong / format tidak dikenali (' + raw.length + ' baris). ' + describeRawSample(raw, 6, 6)
+      );
+    }
 
     // Baris kode alasan (k1, k2, ...) dicari dari ISI selnya (baris dgn
     // >=2 sel berformat "k<angka>"), bukan indeks baris tetap, supaya
@@ -202,7 +233,16 @@
       }
     }
     if (reasonCols.length === 0 || totalCol === -1) {
-      throw new Error('Header kode alasan / kolom total tidak ditemukan di sheet "' + sheetName + '".');
+      throw new Error(
+        'Header kode alasan / kolom total tidak ditemukan di sheet "' +
+          sheetName +
+          '" (reasonCols=' +
+          reasonCols.length +
+          ", totalCol=" +
+          totalCol +
+          "). " +
+          describeRawSample(raw, 6, 10)
+      );
     }
 
     const countsFor = (row) => {
