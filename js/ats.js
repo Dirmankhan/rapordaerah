@@ -205,55 +205,41 @@
   /** Baca sheet "Alasan Verifikasi": per kecamatan, jumlah kasus Sudah
    * Diverval (gabungan DO+LTM+BPB) tiap kode alasan k1-k26 — strukturnya
    * mirip loadCategorySheet (baris subtotal "Jumlah <nama>" & "JUMLAH
-   * PROVINSI NTB") tapi cuma 1 snapshot (tanpa deret tanggal). Baris kode
-   * alasan & kolom total "Jumlah Sudah Verifikasi" dicari lewat isi
-   * selnya (bukan indeks baris/kolom tetap), supaya tahan kalau gviz
-   * melewati baris kosong di awal sheet atau urutannya sedikit berubah. */
+   * PROVINSI NTB") tapi cuma 1 snapshot (tanpa deret tanggal). Baris 4
+   * (label "...Jumlah Sudah Verifikasi") & baris 5 (kode k1-k26) diambil
+   * SATU PER SATU (bukan sekaligus spt loadCategorySheet) — baris 4 di
+   * sheet ini sebagian besar kosong (cuma 2 sel terisi dari puluhan
+   * kolom, beda dari baris tanggal di sheet kategori yg terisi penuh),
+   * dan pola "kebanyakan kosong" itu ternyata membuat gviz mencampur
+   * labelnya dgn baris lain kalau diambil bersamaan — diambil terpisah
+   * per baris spy gviz tidak salah menggabungkannya. */
   async function loadAlasanSheet() {
     const sheetName = CFG.ATS_ALASAN_SHEET;
     const cacheKey = "atsData:" + CFG.ATS_SHEET_ID + ":" + sheetName;
     const cached = window.DataCache && window.DataCache.readFresh(cacheKey, CACHE_TTL_MS);
     if (cached) return cached;
 
-    // Header & data diambil lewat 2 query gviz terpisah — lihat komentar
-    // panjang di atas loadCategorySheet utk alasannya (tipe kolom yg
-    // disimpulkan gviz dari campuran teks header + angka data dalam 1
-    // query yg sama bisa membuat teks headernya sendiri jadi null).
-    const headerRaw = await Gviz.fetchRange(CFG.ATS_SHEET_ID, sheetName, "A1:" + WIDE_COL + HEADER_END_ROW);
-    if (headerRaw.length < HEADER_END_ROW) {
-      throw new Error(
-        'Sheet "' + sheetName + '" kosong / format tidak dikenali (' + headerRaw.length + ' baris header). ' +
-          describeRawSample(headerRaw, HEADER_END_ROW, 6)
-      );
-    }
+    const TITLE_HEADER_ROW = 4;
+    const CODE_HEADER_ROW = 5;
+    const titleHeaderRaw = await Gviz.fetchRange(CFG.ATS_SHEET_ID, sheetName, "A" + TITLE_HEADER_ROW + ":" + WIDE_COL + TITLE_HEADER_ROW);
+    const codeHeaderRaw = await Gviz.fetchRange(CFG.ATS_SHEET_ID, sheetName, "A" + CODE_HEADER_ROW + ":" + WIDE_COL + CODE_HEADER_ROW);
+    const titleRow = titleHeaderRaw[0] || [];
+    const codeRow = codeHeaderRaw[0] || [];
 
-    // Baris kode alasan (k1, k2, ...) dicari dari ISI selnya (baris dgn
-    // >=2 sel berformat "k<angka>"), bukan indeks baris tetap, supaya
-    // tahan kalau susunan barisnya sedikit berbeda dari asumsi di atas.
-    // Kolom total "Jumlah Sudah Verifikasi" dicari dgn cara sama.
-    let codeHeaderRowIdx = -1;
+    // Kode alasan (k1, k2, ...) dicari dari isi baris kode, kolom total
+    // "Jumlah Sudah Verifikasi" dari isi baris judul — dicari lewat isi
+    // selnya (bukan indeks kolom tetap), supaya tahan kalau urutan
+    // kolomnya sedikit berbeda dari asumsi di atas.
     const reasonCols = [];
-    for (let r = 0; r < headerRaw.length; r++) {
-      const row = headerRaw[r] || [];
-      const cols = [];
-      for (let c = 0; c < row.length; c++) {
-        const code = cellText(row[c]);
-        if (/^k\d+$/i.test(code)) cols.push({ code: code.toLowerCase(), col: c });
-      }
-      if (cols.length >= 2) {
-        codeHeaderRowIdx = r;
-        reasonCols.push(...cols);
-        break;
-      }
+    for (let c = 0; c < codeRow.length; c++) {
+      const code = cellText(codeRow[c]);
+      if (/^k\d+$/i.test(code)) reasonCols.push({ code: code.toLowerCase(), col: c });
     }
     let totalCol = -1;
-    for (let r = 0; r < headerRaw.length && totalCol === -1; r++) {
-      const row = headerRaw[r] || [];
-      for (let c = 0; c < row.length; c++) {
-        if (/jumlah\s+sudah\s+verifikasi/i.test(cellText(row[c]))) {
-          totalCol = c;
-          break;
-        }
+    for (let c = 0; c < titleRow.length; c++) {
+      if (/jumlah\s+sudah\s+verifikasi/i.test(cellText(titleRow[c]))) {
+        totalCol = c;
+        break;
       }
     }
     if (reasonCols.length === 0 || totalCol === -1) {
@@ -264,8 +250,14 @@
           reasonCols.length +
           ", totalCol=" +
           totalCol +
-          "). " +
-          describeRawSample(headerRaw, HEADER_END_ROW, 10)
+          "). Baris " +
+          TITLE_HEADER_ROW +
+          ": " +
+          describeRawSample([titleRow], 1, 10) +
+          " Baris " +
+          CODE_HEADER_ROW +
+          ": " +
+          describeRawSample([codeRow], 1, 10)
       );
     }
 
