@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Anak Tidak Sekolah (ATS)</title>
+  <link rel="stylesheet" href="css/style.css?v=54" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>Anak Tidak Sekolah (ATS)</h1>
+    <p class="subtitle">Provinsi Nusa Tenggara Barat &middot; Drop Out, Lulus Tidak Melanjutkan &amp; Belum Pernah Bersekolah</p>
+    <nav class="app-nav">
+      <a href="index.html" class="app-nav-link">Dashboard</a>
+      <a href="spm.html" class="app-nav-link">Indikator SPM Kab./Kota</a>
+      <a href="ats.html" class="app-nav-link active">Anak Tidak Sekolah (ATS)</a>
+    </nav>
+  </header>
+
+  <main class="app-main">
+    <div id="status-box" class="status-box" hidden></div>
+
+    <section class="panel" aria-label="Filter kabupaten/kota">
+      <div class="filter-bar">
+        <div class="filters">
+          <div class="filter-item">
+            <label for="ats-kab-select">Kabupaten/Kota</label>
+            <select id="ats-kab-select"></select>
+          </div>
+        </div>
+      </div>
+      <p id="ats-updated" class="muted small"></p>
+    </section>
+
+    <section class="panel" aria-label="Ringkasan ATS per kategori">
+      <h2>Ringkasan Anak Tidak Sekolah</h2>
+      <p class="muted small">Data snapshot terbaru, status verifikasi tiap kategori.</p>
+      <div id="ats-summary" class="summary-grid"></div>
+    </section>
+
+    <section class="panel" aria-label="Tren verifikasi ATS">
+      <h2>Tren Verifikasi</h2>
+      <p class="muted small">Persentase Sudah Diverval dari waktu ke waktu, per kategori.</p>
+      <div id="ats-trend" class="spm-group-grid"></div>
+    </section>
+
+    <section class="panel" aria-label="Detail per kecamatan">
+      <h2>Detail per Kecamatan &mdash; Gabungan (DO + LTM + BPB)</h2>
+      <div class="table-scroll">
+        <table id="ats-table" hidden>
+          <colgroup>
+            <col style="width: 5%" />
+            <col style="width: 16%" />
+            <col style="width: 31%" />
+            <col style="width: 12%" />
+            <col style="width: 12%" />
+            <col style="width: 12%" />
+            <col style="width: 12%" />
+          </colgroup>
+          <thead>
+            <tr>
+              <th>No</th>
+              <th class="col-truncate">Kabupaten/Kota</th>
+              <th class="col-wrap">Kecamatan</th>
+              <th class="col-indicator">Jumlah ATS</th>
+              <th class="col-indicator">Sudah Diverval</th>
+              <th class="col-indicator">Belum Diverval</th>
+              <th class="col-indicator">% Terverval</th>
+            </tr>
+          </thead>
+          <tbody id="ats-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="js/config.js?v=54"></script>
+  <script src="js/gviz.js?v=54"></script>
+  <script src="js/shared.js?v=54"></script>
+  <script src="js/cache.js?v=54"></script>
+  <script src="js/ats.js?v=54"></script>
+</body>
+</html>

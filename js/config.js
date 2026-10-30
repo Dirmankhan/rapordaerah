@@ -119,4 +119,20 @@ window.DASHBOARD_CONFIG = {
   // penulisannya kadang tidak konsisten). Dicoba berurutan — dipakai yang
   // pertama ditemukan & punya kolom "npsn".
   REFERENSI_SHEET_NAMES: ["referensi", "Copy of Query result"],
+
+  // --- Halaman Anak Tidak Sekolah / ATS (ats.html) ------------------------
+  //
+  // Spreadsheet "Rekap ATS (DO + LTM + BPB)" per kabupaten/kota & kecamatan,
+  // bersumber dari ats.data.kemendikdasmen.go.id. 4 sheet berstruktur
+  // identik: baris 1-2 judul/sumber, baris 4 header tanggal (1 tanggal per
+  // 3 kolom: Jumlah ATS/Sudah Diverval/Belum Diverval), data mulai baris 6.
+  // Tiap kelompok kabupaten/kota diakhiri baris subtotal "Jumlah <nama>",
+  // sheet diakhiri baris "JUMLAH PROVINSI NTB" (lihat js/ats.js).
+  ATS_SHEET_ID: "15XJMfFGRc-SIfrt11E9aHqJz-t0DBtnFRSUNaXbyGV4",
+  ATS_CATEGORIES: [
+    { key: "gabungan", label: "Gabungan (DO + LTM + BPB)", sheet: "Gabungan" },
+    { key: "do", label: "Drop Out (DO)", sheet: "DO" },
+    { key: "ltm", label: "Lulus Tidak Melanjutkan (LTM)", sheet: "LTM" },
+    { key: "bpb", label: "Belum Pernah Bersekolah (BPB)", sheet: "BPB" },
+  ],
 };
