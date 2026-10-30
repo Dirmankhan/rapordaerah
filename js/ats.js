@@ -432,6 +432,22 @@
    * indikator SPM (js/spm.js) tapi disederhanakan: sumbu-y persentase
    * (0-100, bukan skala dinamis per indikator), sumbu-x mengikuti jumlah
    * tanggal snapshot yang ada (bisa bertambah seiring waktu). */
+  /** Sheet ATS diupdate terjadwal shg kolom tanggal terus bertambah dari
+   * waktu ke waktu — kalau tiap kolom dilabeli di sumbu-x & tiap titik
+   * diberi label angka, grafik akan penuh sesak setelah beberapa kali
+   * update. Garis & titik tetap digambar utk SEMUA tanggal (riwayat
+   * lengkap, nilai pasti via tooltip saat hover), tapi label teks statis
+   * (tanggal di sumbu-x & angka persen di tiap titik) dibatasi hanya di
+   * kolom-kolom terpilih (menyebar rata, selalu termasuk kolom pertama &
+   * terakhir) supaya tetap terbaca berapa pun jumlah kolomnya. */
+  function pickLabelIndices(n, maxLabels) {
+    if (n <= maxLabels) return new Set(Array.from({ length: n }, (_, i) => i));
+    const indices = new Set([0, n - 1]);
+    const step = (n - 1) / (maxLabels - 1);
+    for (let k = 0; k < maxLabels; k++) indices.add(Math.round(k * step));
+    return indices;
+  }
+
   function buildTrendChart(seriesList, dateLabels) {
     const card = document.createElement("div");
     card.className = "spm-group-card";
@@ -450,6 +466,7 @@
     const PAD_X = 16;
     const PAD_TOP = 16;
     const AXIS_H = 24;
+    const MAX_X_LABELS = 8;
     const allValues = withData.flatMap((s) => s.points.filter((v) => v !== null));
     const vMin = Math.max(0, Math.min(...allValues));
     const vMax = Math.min(100, Math.max(...allValues));
@@ -460,6 +477,7 @@
     const plotBottom = PAD_TOP + PLOT_H;
     const n = dateLabels.length;
     const xStep = n > 1 ? (W - PAD_X * 2) / (n - 1) : 0;
+    const labeledIndices = pickLabelIndices(n, MAX_X_LABELS);
 
     const xOf = (i) => PAD_X + i * xStep;
     const yOf = (v) => (yHi === yLo ? plotBottom : plotBottom - ((v - yLo) / (yHi - yLo)) * PLOT_H);
@@ -474,6 +492,7 @@
     svg.appendChild(svgEl("line", { x1: PAD_X, y1: plotBottom, x2: W - PAD_X, y2: plotBottom, class: "spm-chart-baseline" }));
 
     dateLabels.forEach((label, i) => {
+      if (!labeledIndices.has(i)) return;
       const t = svgEl("text", {
         x: xOf(i),
         y: plotBottom + 17,
@@ -489,6 +508,7 @@
     const MIN_LABEL_GAP = 13;
     const labelYByKey = {};
     dateLabels.forEach((_, i) => {
+      if (!labeledIndices.has(i)) return;
       const colPoints = [];
       withData.forEach((s, seriesIdx) => {
         const v = s.points[i];
@@ -532,14 +552,16 @@
         dot.style.fill = colorVar;
         svg.appendChild(dot);
 
-        const valLabel = svgEl("text", {
-          x: Math.max(PAD_X, Math.min(cx, W - PAD_X)),
-          y: labelYByKey[seriesIdx + "," + i],
-          "text-anchor": i === 0 ? "start" : i === n - 1 ? "end" : "middle",
-          class: "spm-chart-value-label",
-        });
-        valLabel.textContent = valueText;
-        svg.appendChild(valLabel);
+        if (labeledIndices.has(i)) {
+          const valLabel = svgEl("text", {
+            x: Math.max(PAD_X, Math.min(cx, W - PAD_X)),
+            y: labelYByKey[seriesIdx + "," + i],
+            "text-anchor": i === 0 ? "start" : i === n - 1 ? "end" : "middle",
+            class: "spm-chart-value-label",
+          });
+          valLabel.textContent = valueText;
+          svg.appendChild(valLabel);
+        }
 
         hit.addEventListener("pointerenter", () => showChartTooltip(hit, valueText, s.label, dateLabels[i]));
         hit.addEventListener("focus", () => showChartTooltip(hit, valueText, s.label, dateLabels[i]));
