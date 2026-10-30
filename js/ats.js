@@ -43,6 +43,14 @@
     return v === null || v === undefined || v === "";
   }
 
+  /** Teks sel, di-trim — beberapa sel di spreadsheet sumber ini punya
+   * spasi nyasar di ujung (mis. "Jumlah ATS " atau "Baik "), jadi semua
+   * pencocokan teks header/label melewati ini dulu drpd gagal cocok cuma
+   * gara-gara spasi. */
+  function cellText(v) {
+    return String(v || "").trim();
+  }
+
   /** "1,148" / 1148 -> 1148. Angka ATS berupa bilangan bulat; koma di sheet
    * ini pemisah ribuan (bukan desimal seperti di data rapor lain). */
   function parseCount(v) {
@@ -89,7 +97,7 @@
     // (jumlah baris sebelum data bisa beda2 antar sheet/waktu akses).
     let subHeaderRowIdx = -1;
     for (let r = 0; r < raw.length; r++) {
-      if ((raw[r] || []).some((c) => /^jumlah\s+ats$/i.test(String(c || "")))) {
+      if ((raw[r] || []).some((c) => /jumlah\s+ats/i.test(cellText(c)))) {
         subHeaderRowIdx = r;
         break;
       }
@@ -101,8 +109,8 @@
     const dateHeaderRow = raw[subHeaderRowIdx - 1] || [];
     const dates = [];
     for (let col = 0; col < subHeaderRow.length; col++) {
-      if (/^jumlah\s+ats$/i.test(String(subHeaderRow[col] || "")) && dateHeaderRow[col]) {
-        dates.push({ label: String(dateHeaderRow[col]).trim(), col });
+      if (/jumlah\s+ats/i.test(cellText(subHeaderRow[col])) && dateHeaderRow[col]) {
+        dates.push({ label: cellText(dateHeaderRow[col]), col });
       }
     }
     if (dates.length === 0) throw new Error('Header tanggal tidak ditemukan di sheet "' + sheetName + '".');
@@ -174,7 +182,7 @@
       const row = raw[r] || [];
       const cols = [];
       for (let c = 0; c < row.length; c++) {
-        const code = String(row[c] || "").trim();
+        const code = cellText(row[c]);
         if (/^k\d+$/i.test(code)) cols.push({ code: code.toLowerCase(), col: c });
       }
       if (cols.length >= 2) {
@@ -187,7 +195,7 @@
     for (let r = 0; r < raw.length && totalCol === -1; r++) {
       const row = raw[r] || [];
       for (let c = 0; c < row.length; c++) {
-        if (/jumlah\s+sudah\s+verifikasi/i.test(String(row[c] || ""))) {
+        if (/jumlah\s+sudah\s+verifikasi/i.test(cellText(row[c]))) {
           totalCol = c;
           break;
         }
