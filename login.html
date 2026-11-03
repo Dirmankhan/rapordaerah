@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Masuk &mdash; Dashboard Rapor Pendidikan Daerah</title>
+  <link rel="stylesheet" href="css/style.css?v=64" />
+</head>
+<body class="login-body">
+  <main class="login-wrap">
+    <form id="login-form" class="login-card" aria-label="Form masuk dashboard">
+      <h1>Dashboard Rapor Pendidikan Daerah</h1>
+      <p class="muted small">Masukkan username dan password utk melihat dashboard.</p>
+      <div id="login-error" class="status-box status-error" hidden></div>
+      <div class="filter-item">
+        <label for="login-user">Username</label>
+        <input type="text" id="login-user" autocomplete="username" required autofocus />
+      </div>
+      <div class="filter-item">
+        <label for="login-pass">Password</label>
+        <input type="password" id="login-pass" autocomplete="current-password" required />
+      </div>
+      <button id="login-submit" type="submit" class="btn-primary">Masuk</button>
+    </form>
+  </main>
+
+  <script src="js/config.js?v=64"></script>
+  <script src="js/gviz.js?v=64"></script>
+  <script src="js/auth.js?v=64"></script>
+  <script src="js/login.js?v=64"></script>
+</body>
+</html>

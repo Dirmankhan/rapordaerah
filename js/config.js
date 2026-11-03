@@ -143,6 +143,16 @@ window.DASHBOARD_CONFIG = {
   // dimensi tanggal, cuma 1 snapshot terbaru per kode alasan + 1 kolom
   // total "Jumlah Sudah Verifikasi" (lihat js/ats.js).
   ATS_ALASAN_SHEET: "Alasan Verifikasi",
+  // --- Login (login.html) -------------------------------------------------
+  //
+  // Sheet "user" di CONFIG_SHEET_ID: 1 baris per akun, kolom "user" &
+  // "password" (dicari dari isi header, bukan indeks tetap — lihat
+  // js/login.js). CATATAN: situs ini statis (GitHub Pages, tanpa server),
+  // jadi gerbang login ini cuma mencegah akses tidak sengaja, BUKAN
+  // proteksi data sungguhan — siapa pun yang melihat source halaman atau
+  // sheet ini langsung tetap bisa melihat kredensialnya.
+  USER_SHEET_NAME: "user",
+
   ATS_REASON_LABELS: {
     k1: "Tidak mau bersekolah",
     k2: "Tidak ada biaya",

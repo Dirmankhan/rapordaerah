@@ -95,6 +95,14 @@ body {
   border-color: var(--accent);
   color: #ffffff;
 }
+/* Tombol "Keluar" dipakai elemen <button>, bukan <a>, tapi tetap tampil
+   spt pill nav lainnya (lihat .app-nav-link di atas) — reset gaya bawaan
+   tombol & dorong ke ujung kanan nav. */
+.btn-logout {
+  margin-left: auto;
+  font: inherit;
+  cursor: pointer;
+}
 
 .app-main {
   max-width: 1400px;
@@ -321,6 +329,56 @@ body {
 .btn-secondary:disabled {
   opacity: 0.4;
   cursor: default;
+}
+.btn-primary {
+  padding: 10px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+.btn-primary:hover {
+  opacity: 0.92;
+}
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* Halaman login.html: kartu form login ditengahkan vertikal & horizontal. */
+.login-body {
+  display: flex;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-2);
+}
+.login-wrap {
+  width: 100%;
+  padding: 16px;
+  display: flex;
+  justify-content: center;
+}
+.login-card {
+  width: 100%;
+  max-width: 360px;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.login-card h1 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+.login-card .status-box {
+  margin: 0;
 }
 .result-count {
   margin: 10px 0 0;
