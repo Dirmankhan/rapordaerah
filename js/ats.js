@@ -513,7 +513,14 @@
     const PAD_X = 16;
     const PAD_TOP = 16;
     const AXIS_H = 24;
-    const MAX_X_LABELS = 8;
+    // Ambang jumlah label dihitung dari lebar plot, bukan angka tetap yg
+    // sembarang dipilih — label tanggal pendek (mis. "18 Okt") butuh
+    // sekitar 48px supaya tidak bertabrakan dgn tetangganya. Dgn ambang
+    // tetap kecil (percobaan sebelumnya: 8), tanggal mulai disembunyikan
+    // walau plot-nya masih longgar (baru ~9-10 kolom) — padahal maksud
+    // thinning ini cuma utk cegah numpuk kalau kolom BENAR-BENAR banyak.
+    const EST_LABEL_WIDTH = 48;
+    const MAX_X_LABELS = Math.max(6, Math.floor((W - PAD_X * 2) / EST_LABEL_WIDTH));
     const allValues = withData.flatMap((s) => s.points.filter((v) => v !== null));
     const vMin = Math.max(0, Math.min(...allValues));
     const vMax = Math.min(100, Math.max(...allValues));
